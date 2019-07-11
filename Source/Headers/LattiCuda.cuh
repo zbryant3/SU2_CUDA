@@ -7,7 +7,7 @@
 //***************************************************************************
 
 #ifndef LATTICUDA_H
-#define LATTICUDA_H
+#define LATTICUDA_H 
 
 //*********************
 //    Header Files    *
@@ -21,10 +21,6 @@
 //*********************************
 //      GPU Kernal Functions      *
 //*********************************
-
-__global__ void
-GPU_test(int*);
-
 
 /**
  * Initializes all the links on the lattice to the unit matrix using GPU.
@@ -41,6 +37,13 @@ __global__ void
 GPU_Equilibrate(thrust::complex<double> *d_lattice, int tdim);
 
 
+/**
+ * Gets the average plaquette of the lattice
+ */
+__global__ void
+GPU_AvgPlaquette(thrust::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter);
+
+
 
 //**************************
 //    Class Declaration    *
@@ -51,6 +54,7 @@ private:
   //Host Variables
   thrust::complex<double> *h_lattice; //16 bytes per element
   int h_size;
+  double h_beta;
   int memsize;
 
   //GPU Variables
@@ -73,9 +77,11 @@ public:
 
   /**
    * Constructor for the Lattice QCD wrapper
+   * @param   LattSize  - Size of desired lattice
+   * @param   inBeta    - Beta value
    */
   __host__
-  LattiCuda(int);
+  LattiCuda(int LattSize, double inBeta);
 
 
   /**
@@ -92,12 +98,14 @@ public:
   Equilibrate();
 
 
-
   /**
-   * Initiates a test for various reasons
+   * Gets the value of the average plaquette of the lattice
+   * @return double - Average Plaquette
    */
-  __host__ void
-  Test();
+  __host__ double
+  AvgPlaquette();
+
+
 
 };
 

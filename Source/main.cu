@@ -21,8 +21,8 @@
 //**************************************
 //   Definition of all the variables   *
 //**************************************
-#define LATTSIZE 16
-#define SIZEMATRIX 2
+#define LATTSIZE 8
+#define BETA 2.7
 
 
 
@@ -35,10 +35,13 @@ using namespace std;
 //**********************
 int main()
 {
-  LattiCuda model(LATTSIZE);
+        LattiCuda model(LATTSIZE, BETA);
 
-  model.Equilibrate();
+        for(int i = 0; i < 1; i++){
+          cout << model.AvgPlaquette() << "\n";
+          model.Equilibrate();
+        }
 
 
-  return 0;
+        return 0;
 }

@@ -10,12 +10,18 @@
 #include <thrust/complex.h>
 
 
+//CUDA enabled random number generator
+#include <cuda.h>
+#include <curand_kernel.h>
+
+
 //**************************
 //    Class Declaration    *
 //**************************
 class LattiCuda_Device{
 private:
   int *size;
+  double *beta;
   int sharedcalc;
   thrust::complex<double> *Lattice;
   thrust::complex<double> *SubLattice;
@@ -23,17 +29,9 @@ private:
   // 0 - T  / 1 - X / 2 - Y / 3 - Z
   int min[4];
   int maj[4];
-  int temp[4];
 
-  int minX;
-  int minY;
-  int minZ;
-  int minT;
-
-  int majX;
-  int majY;
-  int majZ;
-  int majT;
+  int tid;
+  curandStatePhilox4_32_10_t rng;
 
 
   /**
@@ -79,6 +77,36 @@ private:
   MU(int *loc, int d);
 
 
+  __device__ void
+  HermConj(int *pos, int d, thrust::complex<double> *in);
+
+  /**
+   * Creates a random link based on the input matrix
+   * @param  in  - Input Matrix
+   * @param  out - Output Matrix
+   */
+  __device__ void
+  RandLink(thrust::complex<double> *in, thrust::complex<double> *out);
+
+  /**
+   * Generates a random integer from 0 to (t - 1)
+   * @param  t - Bound for generation
+   * @return int
+   */
+  __device__ int
+  RandInt(int t);
+
+
+  /**
+   * Draws from reals from -1 to 1 or from 0 to 1
+   * @param  t - t = 0 (-1 to 1) or t = anything else (0 to 1)
+   * @return double
+   */
+  __device__ double
+  RandDouble(int t);
+
+
+
   /**
    * Populates the sublattice based on the major lattice
    */
@@ -92,13 +120,30 @@ private:
   __device__ void
   ThreadEquilibrate();
 
+
+  /**
+   * Initializes the position for the sublattice and major lattice
+   */
+  __device__ void
+  IniPos(int t);
+
+
+  /**
+   * Multiplies two matrices together, saving the result to the third input
+   * @param  m1 - Matrix 1
+   * @param  m2 - Matrix 2
+   * @param  r  - Result
+   */
+  __device__ void
+  MaMult(thrust::complex<double> *m1, thrust::complex<double> *m2, thrust::complex<double> *r);
+
 public:
 
   /**
    * Constructor for the Lattice QCD wrapper
    */
   __device__
-  LattiCuda_Device(int *const_size, thrust::complex<double> *major_lattice,
+  LattiCuda_Device(int *const_size, double *const_beta, thrust::complex<double> *major_lattice,
      thrust::complex<double> *SubLatt = NULL, int t = 0);
 
   /**
@@ -122,10 +167,10 @@ public:
 
 
   /**
-   * Initiates a test for various reasons
+   * Generates the average plaquette for each block
    */
   __device__ void
-  TestBack();
+  AvgPlaquette(double *plaq, double *iter);
 
 
 };
