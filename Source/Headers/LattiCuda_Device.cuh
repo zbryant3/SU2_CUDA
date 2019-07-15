@@ -118,7 +118,7 @@ private:
    * Equilibrates the lattice on thread based level
    */
   __device__ void
-  ThreadEquilibrate();
+  ThreadEquilibrate(int dir);
 
 
   /**
@@ -154,9 +154,10 @@ public:
 
   /**
    * Equilibrates the sublattices by populating the sublattices
+   * @param   dir    - Direction to equilibrate
    */
   __device__ void
-  Equilibrate();
+  Equilibrate(int dir);
 
 
   /**

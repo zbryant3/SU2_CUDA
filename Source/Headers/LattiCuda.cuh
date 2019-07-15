@@ -7,7 +7,7 @@
 //***************************************************************************
 
 #ifndef LATTICUDA_H
-#define LATTICUDA_H 
+#define LATTICUDA_H
 
 //*********************
 //    Header Files    *
@@ -27,14 +27,14 @@
  * @param  d_lattice - Pointer to the lattice in device memory
  */
 __global__ void
-GPU_Initialize(thrust::complex<double> *d_lattice);
+GPU_Initialize(thrust::complex<double> *d_lattice, int tdim);
 
 /**
  * Equilibrates the lattice using the GPU.
  * @param  d_lattice - Pointer to the lattice in device memory
  */
 __global__ void
-GPU_Equilibrate(thrust::complex<double> *d_lattice, int tdim);
+GPU_Equilibrate(thrust::complex<double> *d_lattice, int tdim, int dir);
 
 
 /**

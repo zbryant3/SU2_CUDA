@@ -82,8 +82,8 @@ LattiCuda_Device::SLoc(int *loc, int d, int m){
 
         int coor{0};
 
-        coor = loc[1] + loc[2] * sharedcalc + loc[3] * sharedcalc * sharedcalc + loc[0] * sharedcalc * sharedcalc * sharedcalc
-               + d * sharedcalc * sharedcalc * sharedcalc * 3 + m * sharedcalc * sharedcalc * sharedcalc * 3 * 4;
+        coor = loc[1] + loc[2]*sharedcalc + loc[3]*sharedcalc*sharedcalc + loc[0]*sharedcalc*sharedcalc*sharedcalc
+               + d*sharedcalc*sharedcalc*sharedcalc*3 + m*sharedcalc*sharedcalc*sharedcalc*3*4;
 
         return coor;
 
@@ -97,65 +97,150 @@ LattiCuda_Device::SLoc(int *loc, int d, int m){
 __device__ void
 LattiCuda_Device::Populate(){
 
+        //Traverse time directions
+        for(int t = 0; t < 3; t++) {
+                min[0] = t;
 
-        //Fill the normal spots in all directions
-        for(int d = 0; d < 4; d++) {
-                //Matrix Fill
-                for(int m = 0; m < 4; m++) {
-                        SubLattice[SLoc(min, d, m)]
-                                = Lattice[MLoc(maj, d, m)];
-                }
-        }
-        __syncthreads();
-
-
-        //Fill looking up in all dimensions
-        for(int i = 0; i < 4; i++) {
-
-                //Go up in i direction
-                MU(min,i);
-                MU(maj,i);
-
-                //Look in all directions
                 for(int d = 0; d < 4; d++) {
-                        //Fill Matrix
+                        //Fill normal positions
                         for(int m = 0; m < 4; m++) {
                                 SubLattice[SLoc(min, d, m)]
                                         = Lattice[MLoc(maj, d, m)];
                         }
                 }
 
-                //Go back down in original location
-                MD(min,i);
-                MD(maj,i);
-                __syncthreads();
-        }
-        __syncthreads();
+                //Fill looking up in the X direction
+                if(min[1] == blockDim.x) {
 
+                        //Move up in X
+                        MU(min, 1);
+                        MU(maj, 1);
 
-        //Fill looking down in all dimensions
-        for(int i = 0; i < 4; i++) {
-
-                //Go down in i direction
-                MD(min,i);
-                MD(maj,i);
-
-                //Look in all directions
-                for(int d = 0; d < 4; d++) {
-
-                        //Fill Matrix
-                        for(int m = 0; m < 4; m++) {
-                                SubLattice[SLoc(min, d, m)]
-                                        = Lattice[MLoc(maj, d, m)];
+                        //Matrix Fill
+                        for(int d = 0; d < 4; d++) {
+                                for(int m = 0; m < 4; m++) {
+                                        SubLattice[SLoc(min, d, m)]
+                                                = Lattice[MLoc(maj, d, m)];
+                                }
                         }
-                }
 
-                //Go back up in original location
-                MU(min,i);
-                MU(maj,i);
+                        //Move down in X
+                        MD(min, 1);
+                        MD(maj, 1);
+                }
                 __syncthreads();
+
+                //Fill looking Down in the X direction
+                if(min[1] == 1) {
+
+                        //Move down in X
+                        MD(min, 1);
+                        MD(maj, 1);
+
+                        //Matrix Fill
+                        for(int d = 0; d < 4; d++) {
+                                for(int m = 0; m < 4; m++) {
+                                        SubLattice[SLoc(min, d, m)]
+                                                = Lattice[MLoc(maj, d, m)];
+                                }
+                        }
+                        //Move up in X
+                        MU(min, 1);
+                        MU(maj, 1);
+                }
+                __syncthreads();
+
+                //Fill looking up in the Y direction
+                if(min[2] == blockDim.y) {
+
+                        //Move up in Y
+                        MU(min, 2);
+                        MU(maj, 2);
+
+                        //Fill normall positions
+                        for(int d = 0; d < 4; d++) {
+                                for(int m = 0; m < 4; m++) {
+                                        SubLattice[SLoc(min, d, m)]
+                                                = Lattice[MLoc(maj, d, m)];
+                                }
+                        }
+
+                        //Move down in Y
+                        MD(min, 2);
+                        MD(maj, 2);
+                }
+                __syncthreads();
+
+                //Fill looking Down in the Y direction
+                if(min[2] == 1) {
+
+                        //Move down in Y
+                        MD(min, 2);
+                        MD(maj, 2);
+
+                        //Fill normal positions
+                        for(int d = 0; d < 4; d++) {
+                                for(int m = 0; m < 4; m++) {
+                                        SubLattice[SLoc(min, d, m)]
+                                                = Lattice[MLoc(maj, d, m)];
+                                }
+                        }
+
+                        //Move up in Y
+                        MU(min, 2);
+                        MU(maj, 2);
+                }
+                __syncthreads();
+
+                //Fill looking up in the Z direction
+                if(min[3] == blockDim.z) {
+
+                        //Move up in Z
+                        MU(min, 3);
+                        MU(maj, 3);
+
+
+
+                        //Fill normal positions
+                        for(int d = 0; d < 4; d++) {
+                                for(int m = 0; m < 4; m++) {
+                                        SubLattice[SLoc(min, d, m)]
+                                                = Lattice[MLoc(maj, d, m)];
+                                }
+                        }
+
+                        //Move down in Z
+                        MD(min, 3);
+                        MD(maj, 3);
+                }
+                __syncthreads();
+
+                //Fill looking Down in the Z direction
+                if(min[3] == 1) {
+
+                        //Move down in Z
+                        MD(min, 3);
+                        MD(maj, 3);
+
+                        //Fill normal positions
+                        for(int d = 0; d < 4; d++) {
+                                for(int m = 0; m < 4; m++) {
+                                        SubLattice[SLoc(min, d, m)]
+                                                = Lattice[MLoc(maj, d, m)];
+                                }
+                        }
+
+                        //Move up in Z
+                        MU(min, 3);
+                        MU(maj, 3);
+                }
+                __syncthreads();
+
+
         }
-        __syncthreads();
+
+
+
 
 };
 
@@ -220,12 +305,14 @@ __device__ double
 LattiCuda_Device::RandDouble(int t){
 
         double z{0};
-        if( t == 0 )
-                z = 2*(curand_uniform(&rng)) - 1;
-        else
+        if( t == 0 ) {
+                z = 2*(curand_uniform_double(&rng)) - 1;
+        }
+        else{
                 do
-                        z= 1 - curand_uniform(&rng);
+                        z = 1 - curand_uniform_double(&rng);
                 while(z == 0);
+        }
 
         return z;
 
@@ -236,10 +323,10 @@ LattiCuda_Device::RandDouble(int t){
 __device__ void
 LattiCuda_Device::HermConj(int *pos, int d, thrust::complex<double> *in){
 
-  in[0] = thrust::conj(SubLattice[SLoc(pos, d, 0)]);
-  in[1] = thrust::conj(SubLattice[SLoc(pos, d, 2)]);
-  in[2] = thrust::conj(SubLattice[SLoc(pos, d, 1)]);
-  in[3] = thrust::conj(SubLattice[SLoc(pos, d, 3)]);
+        in[0] = thrust::conj(Lattice[MLoc(pos, d, 0)]);
+        in[1] = thrust::conj(Lattice[MLoc(pos, d, 2)]);
+        in[2] = thrust::conj(Lattice[MLoc(pos, d, 1)]);
+        in[3] = thrust::conj(Lattice[MLoc(pos, d, 3)]);
 };
 
 
@@ -251,20 +338,15 @@ LattiCuda_Device::HermConj(int *pos, int d, thrust::complex<double> *in){
 __device__ void
 LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> *out){
 
-        thrust::complex<double> temp = (in[0]*in[3] - in[1] * in[2]);
-        printf("Real: %f \t Imag: %f\n", temp.real(), temp.imag());
-        double sdet = sqrt(temp.real());
-        /*
-        for(int i = 0; i < 4; i++){
-          printf("Loc: %d \t Real: %f \t Imag: %f\n", i, in[i].real(), in[i].imag());
-        }
-        */
+        thrust::complex<double> temp = (in[0]*in[3] - in[1]*in[2]);
 
-        int y[4], r[4];
+        double sdet = sqrt(temp.real());
+        double y[4], r[4];
 
         //Normalize the input matrix
         for(int i = 0; i < 4; i++)
-                in[0] = in[0]/sdet;
+                in[i] = in[i] / sdet;
+
 
 
         //Generate one acceptable number based on heatbath
@@ -272,11 +354,12 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
                 //Random number from 0-1
                 r[0] = RandDouble(1);
 
+
                 // a0 = 1 + (1/B*k)ln(x)
                 // exp[-2Bk] < x < 1
                 y[0] = 1 + (1/((*beta) * sdet))*log( r[0]*(1-exp(-2*(*beta)*sdet)) + exp(-2*(*beta)*sdet));
 
-                //Random number from 0-1
+                //Random number from (0,1)
                 r[0] = RandDouble(1);
 
         } while(pow(y[0], 2) > 1 - pow(r[0], 2)); // a0^2 > 1 - r^2
@@ -285,15 +368,17 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
         //Generate 3 random numbers to be used to generate final matrix
         do {
 
-                for(int i = 1; i < 4; i++)
-                        r[i] = RandDouble(0);
+                for(int i = 1; i < 4; i++){
+                  r[i] = RandDouble(0);
+                  printf("rand: %f\n", r[i]);
+                }
 
-        } while( (pow(r[1], 2) + pow(r[2], 2) + pow(r[1], 2)) > 1 );
+        } while( (pow(r[1], 2) + pow(r[2], 2) + pow(r[3], 2)) > 1 );
 
 
         //Use the three randomly generated numbers to generate the matrix elements
         for(int i = 1; i < 4; i++)
-                y[i] = sqrt(1 - pow(y[0],2)) * (r[i]/sqrt(pow(r[1],2)+pow(r[2],2)+pow(r[3],2)));
+                y[i] = sqrt(1 - pow(y[0],2)) * (r[i]/sqrt(pow(r[1],2) + pow(r[2],2) + pow(r[3],2)));
 
         thrust::complex<double> m[4], w[4];
 
@@ -302,10 +387,11 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
         m[2] = thrust::complex<double>(-1*y[2], y[1]);
         m[3] = thrust::complex<double>(y[0], -1*y[3]);
 
-
         //Get the hermition conjugate of the input matrix
-        for(int i = 0; i < 4; i++)
-                w[i] = thrust::conj(in[3 - i]);
+        w[0] = thrust::conj(in[0]);
+        w[1] = thrust::conj(in[2]);
+        w[2] = thrust::conj(in[1]);
+        w[3] = thrust::conj(in[3]);
 
         //Multiply the generated matrix and the hermition conjugate
         //And save to the output matrix
@@ -317,8 +403,7 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
  * Equilibrates the lattice on thread based level
  */
 __device__ void
-LattiCuda_Device::ThreadEquilibrate() {
-
+LattiCuda_Device::ThreadEquilibrate(int d) {
 
         thrust::complex<double> a[4], b[4], c[4];
         thrust::complex<double> w[4], w1[4], w2[4], w3[4];
@@ -326,78 +411,88 @@ LattiCuda_Device::ThreadEquilibrate() {
 
         int pos[4];
 
-        //Look in all directions
-        for(int d = 0; d < 4; d++) {
 
-                //Go to initial position
-                for(int i = 0; i < 4; i++)
-                        pos[i] = min[i];
+        //Go to initial position
+        for(int j = 0; j < 4; j++)
+                pos[j] = maj[j];
 
-                //Re-initialize C
-                for(int j = 0; j < 4; j++) {
-                        c[j] = thrust::complex<double>(0,0);
-                }
-
-                //For the directions other than that we are already looking in
-                for(int i = 0; i < 4; i++) {
-                        if(i != d) {
-
-                                //Get link looking up in d
-                                MU(pos, d);
-                                for(int k = 0; k < 4; k++)
-                                        w1[k] = SubLattice[SLoc(pos, i, k)];
-                                MD(pos, d);
+        //Re-initialize C
+        for(int j = 0; j < 4; j++) {
+                c[j] = thrust::complex<double>(0,0);
+        }
 
 
-                                //Get (hermitian conjugate) link looking up in i
-                                MU(pos, i);
-                                HermConj(pos, d, w2);
-                                MD(pos, i);
+        //For the directions other than that we are already looking in
+        for(int i = 0; i < 4; i++) {
+                if(i != d) {
 
-                                //Get (hermitian conjugate) link looking in i
-                                HermConj(pos, i, w3);
-                                MU(pos, d);
+                        //Move up in d and get w1 in i OK
+                        MU(pos, d);
+                        for(int m = 0; m < 4; m++) {
+                                w1[m] = Lattice[MLoc(pos, i, m)];
+                        }
 
-                                MD(pos, i);
-                                HermConj(pos, i, v1);
 
-                                MD(pos, d);
-                                HermConj(pos, d, v2);
-                                for(int k = 0; k < 4; k++) {
-                                        v3[k] = SubLattice[SLoc(pos, i, k)];
-                                }
-                                MU(pos, i);
 
-                                //Multiply matrices w2xw3 and v2xv3
-                                MaMult(w2, w3, w);
-                                MaMult(v2, v3, v);
+                        //Move down in i and get v1 in i (hermitian conj) OK
+                        MD(pos, i);
+                        HermConj(pos, i, v1);
 
-                                //Multiply w1xw and v1, v and add the results
-                                MaMult(w1, w, a);
-                                MaMult(v1, v, b);
+                        //Move down in d and get v2 in d (hermitian conj) OK
+                        // and get v3 in i OK
+                        MD(pos, d);
+                        HermConj(pos, d, v2);
+                        for(int m = 0; m < 4; m++) {
+                                v3[m] = Lattice[MLoc(pos, i, m)];
+                        }
+                        //Move up in i (original location now)
+                        // and get w3 in i (hermitian conj) OK
+                        MU(pos, i);
+                        HermConj(pos, i, w3);
 
-                                for(int k = 0; k < 4; k++) {
-                                        c[k] = (b[k] + a[k]);
-                                }
+
+
+                        //Move up in i and get w2 in d (hermitian conj) OK
+                        // then move back down to original location
+                        MU(pos, i);
+                        HermConj(pos, d, w2);
+                        MD(pos, i);
+
+
+                        //Multiply matrices w2xw3 and v2xv3
+                        MaMult(w2, w3, w);
+                        MaMult(v2, v3, v);
+
+
+                        //Multiply w1xw and v1, v and add the results
+                        MaMult(w1, w, a);
+                        MaMult(v1, v, b);
+
+
+                        for(int k = 0; k < 4; k++) {
+                                c[k] += (a[k] + b[k]);
                         }
                 }
 
+        }
 
-                //Get a randomly generated link matrix based on C and save to A
-                RandLink(c, a);
+        //Get a randomly generated link matrix based on C and save to A
+        RandLink(c, a);
 
-                //Save Random Link
-                for(int k = 0; k < 4; k++) {
-                        SubLattice[SLoc(min, d, k)] = a[k];
+        /*
+        if(maj[0] == 7 && maj[1] == 0 && maj[2] == 0 && maj[3] == 0) {
+                for(int m = 0; m < 4; m++) {
+                        printf("c Real: %f\tImag: %f\n", a[m].real(), a[m].imag());
+                        printf("abs: %f\n\n", thrust::abs(a[m]));
                 }
 
         }
+        */
 
 
-        for(int d = 0; d < 4; d++) {
-                for(int m = 0; m < 4; m++)
-                        Lattice[MLoc(maj, d, m)] = SubLattice[SLoc(min, d, m)];
-        }
+        //Save Randomized Link
+        for(int k = 0; k < 4; k++)
+                Lattice[MLoc(maj, d, k)] = a[k];
 
 };
 
@@ -421,7 +516,7 @@ LattiCuda_Device::LattiCuda_Device(int* const_size, double *const_beta, thrust::
 
         SubLattice = SubLatt;
 
-        sharedcalc = (*size/ (*size/2) + 2);
+        sharedcalc = 4;
 
         IniPos(t);
 
@@ -450,24 +545,19 @@ LattiCuda_Device::~LattiCuda_Device(){
 __device__ void
 LattiCuda_Device::Initialize(){
 
-        //Major location of threads
-        int major[4];
-        major[0] = blockIdx.z;
-        major[1] = threadIdx.x;
-        major[2] = threadIdx.y + blockIdx.x * blockDim.y;
-        major[3] = threadIdx.z + blockIdx.y * blockDim.z;
-
         //Set links in all directions to the unit matrix
         for(int d = 0; d < 4; d++) {
-                Lattice[MLoc(major,d,0)]
+                Lattice[MLoc(maj,d,0)]
                         = thrust::complex<double>(1,0);
-                Lattice[MLoc(major,d,1)]
+                Lattice[MLoc(maj,d,1)]
                         = thrust::complex<double>(0,0);
-                Lattice[MLoc(major,d,2)]
+                Lattice[MLoc(maj,d,2)]
                         = thrust::complex<double>(0,0);
-                Lattice[MLoc(major,d,3)]
+                Lattice[MLoc(maj,d,3)]
                         = thrust::complex<double>(1,0);
+
         }
+        __syncthreads();
 
 };
 
@@ -476,41 +566,43 @@ LattiCuda_Device::Initialize(){
  * Equilibrates the sublattices by populating the sublattices
  */
 __device__ void
-LattiCuda_Device::Equilibrate(){
+LattiCuda_Device::Equilibrate(int dir){
 
         //Checkerboard pattern for blocks
         int Bremainder = (blockIdx.x + blockIdx.y + blockIdx.z)%2;
 
         //Checkerboard pattern for threads
-        int Tremainder = (threadIdx.x + threadIdx.y + threadIdx.z)%2;
+        int Tremainder = (min[1] + min[2] + min[3])%2;
 
         if(Bremainder == 0) {
-                Populate();
+                //Populate();
 
                 if(Tremainder == 0) {
-                        ThreadEquilibrate();
+                        ThreadEquilibrate(dir);
                 }
                 __syncthreads();
 
                 if(Tremainder == 1) {
-                        ThreadEquilibrate();
+                        ThreadEquilibrate(dir);
                 }
                 __syncthreads();
+
         }
         __syncthreads();
 
         if(Bremainder == 1) {
-                Populate();
+                //Populate();
 
                 if(Tremainder == 0) {
-                        ThreadEquilibrate();
+                        ThreadEquilibrate(dir);
                 }
                 __syncthreads();
 
                 if(Tremainder == 1) {
-                        ThreadEquilibrate();
+                        ThreadEquilibrate(dir);
                 }
                 __syncthreads();
+
         }
         __syncthreads();
 
@@ -523,16 +615,14 @@ LattiCuda_Device::Equilibrate(){
 __device__ void
 LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
 
+        //Populate();
+
         thrust::complex<double> w[4], w1[4], w2[4], w3[4], w4[4];
         thrust::complex<double> v[4];
         int pos[4];
 
-        //if(threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
-        //  && blockIdx.x == 0 && blockIdx.y == 0 && blockIdx.z == 0)
-
-
-        plaq[MLoc(maj, 0, 0)] = 0;
-        iter[MLoc(maj, 0, 0)] = 0;
+        plaq[tid] = 0;
+        iter[tid] = 0;
 
 
         for(int d = 0; d < 4; d++)
@@ -543,27 +633,25 @@ LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
 
                                 //Get current position
                                 for(int k = 0; k < 4; k++)
-                                        pos[k] = min[k];
+                                        pos[k] = maj[k];
 
-                                //Get link in direction of dir1
+                                //Get link in direction of d
                                 for(int m = 0; m < 4; m++)
                                         w1[m] = Lattice[MLoc(pos, d, m)];
 
-                                //Look up in direction of dir1 and get link of dir2
+                                //Look up in direction of d and get link of i
                                 MU(pos, d);
-                                HermConj(pos, i, w2);
+                                for(int m = 0; m < 4; m++)
+                                        w2[m] = Lattice[MLoc(pos, i, m)];
                                 MD(pos, d);
 
-                                //Look up in direction of dir2 and get link of dir1 (conjugated)
+                                //Look up in direction of i and get link of d (conjugated)
                                 MU(pos, i);
-                                for(int m = 0; m < 4; m++)
-                                      w3[m] = thrust::conj(Lattice[MLoc(pos, d, (3 - m))]);
+                                HermConj(pos, d, w3);
                                 MD(pos, i);
 
                                 //Get link in direction of dir2 (conjugated)
-                                for(int m = 0; m < 4; m++)
-                                    w4[m] = thrust::conj(Lattice[MLoc(pos, i, (3 - m))]);
-
+                                HermConj(pos, i, w4);
 
                                 MaMult( w1, w2, w);
                                 MaMult( w3, w4, v);
@@ -572,8 +660,8 @@ LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
 
                                 thrust::complex<double> temp = (w1[0] + w1[3]);
 
-                                plaq[MLoc(maj, 0, 0)] += 0.5*temp.real();
-                                iter[MLoc(maj, 0, 0)] += 1;
+                                plaq[tid] += 0.5*temp.real();
+                                iter[tid] += 1;
                         }
 
                 }

@@ -11,7 +11,7 @@ using namespace std;
 //*************************************
 //    Global Variable Declarations    *
 //*************************************
- 
+
 /**
  * Constant Variables for device code
  * @var   d_size    - Size of the lattice
@@ -29,9 +29,9 @@ __constant__ double d_beta;
  * Initializes all the links on the lattice to the unit matrix
  */
 __global__ void
-GPU_Initialize(thrust::complex<double> *d_lattice){
+GPU_Initialize(thrust::complex<double> *d_lattice, int tdim){
 
-        LattiCuda_Device device(&d_size, &d_beta, d_lattice);
+        LattiCuda_Device device(&d_size, &d_beta, d_lattice, NULL, tdim);
 
         device.Initialize();
 };
@@ -42,14 +42,14 @@ GPU_Initialize(thrust::complex<double> *d_lattice){
  * @param  d_lattice - Pointer to the lattice in device memory
  */
 __global__ void
-GPU_Equilibrate(thrust::complex<double> *d_lattice, int tdim){
+GPU_Equilibrate(thrust::complex<double> *d_lattice, int tdim, int dir){
 
         //Shared sublattice memory with size determined at kernal launch
         extern __shared__ thrust::complex<double> sub_lattice[];
 
         LattiCuda_Device device(&d_size, &d_beta, d_lattice, sub_lattice, tdim);
 
-        device.Equilibrate();
+        device.Equilibrate(dir);
 
 };
 
@@ -62,9 +62,9 @@ __global__ void
 GPU_AvgPlaquette(thrust::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter){
 
         //Shared sublattice memory with size determined at kernal launch
-        //extern __shared__ thrust::complex<double> sub_lattice[];
+        extern __shared__ thrust::complex<double> sub_lattice[];
 
-        LattiCuda_Device device(&d_size, &d_beta, d_lattice, NULL, tdim);
+        LattiCuda_Device device(&d_size, &d_beta, d_lattice, sub_lattice, tdim);
 
         device.AvgPlaquette(d_plaq, d_iter);
 
@@ -81,13 +81,13 @@ GPU_AvgPlaquette(thrust::complex<double> *d_lattice, int tdim, double *d_plaq, d
 __host__ void
 LattiCuda::Initialize(){
 
-        //                X           Y split            Z split
-        dim3 in_Threads(h_size, h_size/(h_size/2), h_size/(h_size/2));
+        int half = h_size/2;
+        dim3 in_Threads(2, 2, 2);
+        dim3 in_Blocks(half, half, half);
 
-        //  sizeofsplit:   Y           Z         T-Dimension
-        dim3 in_Blocks((h_size/2), (h_size/2), h_size);
-
-        GPU_Initialize<<<in_Blocks,in_Threads>>>(d_lattice);
+        for(int t = 0; t < h_size; t++){
+          GPU_Initialize<<<in_Blocks,in_Threads>>>(d_lattice, t);
+        }
 };
 
 
@@ -147,7 +147,7 @@ LattiCuda::Equilibrate(){
         int half = h_size/2;
 
         //Dimensions for the kernal
-        dim3 Threads(h_size/half, h_size/half, h_size/half);
+        dim3 Threads(2, 2, 2);
         dim3 Blocks(half, half, half);
 
         //Max shared size is 49152
@@ -160,12 +160,16 @@ LattiCuda::Equilibrate(){
                 exit(EXIT_FAILURE);
         }
 
-        //Checkerboard pattern for T dimension
-        for(int offset = 0; offset <= 1; offset++) {
-                for(int tdim = 0; tdim < half; tdim++) {
-                        GPU_Equilibrate<<<Blocks, Threads, sharedsize>>>(d_lattice, (tdim)*2 + offset);
-                }
-                cudaDeviceSynchronize();
+        //All directions need to updated independently
+        for(int d = 0; d < 4; d++){
+
+          //Checkerboard pattern for T dimension
+          for(int offset = 0; offset <= 1; offset++) {
+            for(int tdim = 0; tdim < half; tdim++) {
+              GPU_Equilibrate<<<Blocks, Threads, sharedsize>>>(d_lattice, ((tdim)*2 + offset), d);
+            }
+            cudaDeviceSynchronize();
+          }
         }
 
 };
@@ -195,7 +199,7 @@ LattiCuda::AvgPlaquette(){
         dim3 Threads(h_size/half, h_size/half, h_size/half);
         dim3 Blocks(half, half, half);
 
-        /*
+
         //Max shared size is 49152
         int sharedsize = ((h_size)/(half) + 2) * ((h_size)/(half) + 2)
                          * ((h_size)/(half) + 2) * 768;
@@ -205,24 +209,26 @@ LattiCuda::AvgPlaquette(){
                 cout << "Shared memory size too large. Exiting... \n \n";
                 exit(EXIT_FAILURE);
         }
-        */
 
+
+        //Run on gpu for each time slice
         for(int tdim = 0; tdim < h_size; tdim++) {
-                GPU_AvgPlaquette<<<Blocks, Threads>>>
+                GPU_AvgPlaquette<<<Blocks, Threads, sharedsize>>>
                 (d_lattice, tdim, d_plaq, d_iter);
                 cudaDeviceSynchronize();
         }
 
+        //Copy results from gpu
         cudaMemcpy(h_plaq, d_plaq, sizeof(double)*h_size*h_size*h_size*h_size, cudaMemcpyDeviceToHost);
         cudaMemcpy(h_iter, d_iter, sizeof(double)*h_size*h_size*h_size*h_size, cudaMemcpyDeviceToHost);
 
 
+        //Evaluate results
         double totplaq{0};
         double totiter{0};
         for(int i = 0; i < h_size*h_size*h_size*h_size; i++){
           totplaq += h_plaq[i];
           totiter += h_iter[i];
-          //cout << h_plaq[i] << "\n";
         }
 
         cudaFree(d_plaq);
