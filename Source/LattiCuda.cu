@@ -234,5 +234,5 @@ LattiCuda::AvgPlaquette(){
         cudaFree(d_plaq);
         cudaFree(d_iter);
 
-        return (totplaq/totiter);
+        return (1 - totplaq/totiter);
 };
