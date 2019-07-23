@@ -196,7 +196,7 @@ LattiCuda::AvgPlaquette(){
         cudaMalloc((void**)&d_iter, sizeof(double)*h_size*h_size*h_size*h_size);
 
         //Dimensions for the kernal
-        dim3 Threads(h_size/half, h_size/half, h_size/half);
+        dim3 Threads(2, 2, 2);
         dim3 Blocks(half, half, half);
 
 
@@ -215,8 +215,8 @@ LattiCuda::AvgPlaquette(){
         for(int tdim = 0; tdim < h_size; tdim++) {
                 GPU_AvgPlaquette<<<Blocks, Threads, sharedsize>>>
                 (d_lattice, tdim, d_plaq, d_iter);
-                cudaDeviceSynchronize();
         }
+        cudaDeviceSynchronize();
 
         //Copy results from gpu
         cudaMemcpy(h_plaq, d_plaq, sizeof(double)*h_size*h_size*h_size*h_size, cudaMemcpyDeviceToHost);

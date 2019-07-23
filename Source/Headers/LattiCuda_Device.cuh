@@ -31,7 +31,7 @@ private:
   int maj[4];
 
   int tid;
-  curandStatePhilox4_32_10_t rng;
+  curandStateMRG32k3a_t rng;
 
 
   /**

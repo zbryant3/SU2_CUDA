@@ -343,11 +343,15 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
         double sdet = sqrt(temp.real());
         double y[4], r[4];
 
+        /*
+           if(maj[0] == 0 && maj[1] == 0 && maj[2] == 0 && maj[3] == 0){
+           printf("Sdet %f\n", sdet);
+           }
+         */
+
         //Normalize the input matrix
         for(int i = 0; i < 4; i++)
                 in[i] = in[i] / sdet;
-
-
 
         //Generate one acceptable number based on heatbath
         do {
@@ -357,7 +361,7 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
 
                 // a0 = 1 + (1/B*k)ln(x)
                 // exp[-2Bk] < x < 1
-                y[0] = 1 + (1/((*beta) * sdet))*log( r[0]*(1-exp(-2*(*beta)*sdet)) + exp(-2*(*beta)*sdet));
+                y[0] = 1 + (1/( (*beta)*sdet ))*log( r[0]*(1-exp(-2*(*beta)*sdet)) + exp(-2*(*beta)*sdet));
 
                 //Random number from (0,1)
                 r[0] = RandDouble(1);
@@ -365,12 +369,12 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
         } while(pow(y[0], 2) > 1 - pow(r[0], 2)); // a0^2 > 1 - r^2
 
 
+
         //Generate 3 random numbers to be used to generate final matrix
         do {
 
-                for(int i = 1; i < 4; i++){
-                  r[i] = RandDouble(0);
-                  printf("rand: %f\n", r[i]);
+                for(int i = 1; i < 4; i++) {
+                        r[i] = RandDouble(0);
                 }
 
         } while( (pow(r[1], 2) + pow(r[2], 2) + pow(r[3], 2)) > 1 );
@@ -384,8 +388,8 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
 
         m[0] = thrust::complex<double>(y[0], y[3]);
         m[1] = thrust::complex<double>(y[2], y[1]);
-        m[2] = thrust::complex<double>(-1*y[2], y[1]);
-        m[3] = thrust::complex<double>(y[0], -1*y[3]);
+        m[2] = thrust::complex<double>((-1)*y[2], y[1]);
+        m[3] = thrust::complex<double>(y[0], (-1)*y[3]);
 
         //Get the hermition conjugate of the input matrix
         w[0] = thrust::conj(in[0]);
@@ -396,6 +400,30 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
         //Multiply the generated matrix and the hermition conjugate
         //And save to the output matrix
         MaMult(m, w, out);
+
+        /*
+        temp = out[0] * out[3] - out[1] * out[2];
+        sdet = sqrt(temp.real());
+        for(int m = 0; m < 4; m++){
+          out[m] = out[m]/sdet;
+        }
+        */
+
+
+       sdet = pow(thrust::abs(out[0]),2) + pow(thrust::abs(out[1]),2);
+       out[0] = out[0]/sdet;
+       out[1] = out[1]/sdet;
+       out[2] = thrust::conj((-1)*out[1]);
+       out[3] = thrust::conj(out[0]);
+
+        /*
+        if(maj[0] == 0 && maj[1] == 0 && maj[2] == 0 && maj[3] == 0) {
+                printf("%.20g\n",sdet);
+        }
+        */
+
+
+
 };
 
 
@@ -411,12 +439,15 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
 
         int pos[4];
 
+        //Sets random seed
+        curand_init(clock64(), MLoc(maj, d, 0), 0, &rng);
+
 
         //Go to initial position
         for(int j = 0; j < 4; j++)
                 pos[j] = maj[j];
 
-        //Re-initialize C
+        //Initialize C
         for(int j = 0; j < 4; j++) {
                 c[j] = thrust::complex<double>(0,0);
         }
@@ -426,33 +457,31 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
         for(int i = 0; i < 4; i++) {
                 if(i != d) {
 
-                        //Move up in d and get w1 in i OK
+                        //Move up in d and get w1 in i
                         MU(pos, d);
                         for(int m = 0; m < 4; m++) {
                                 w1[m] = Lattice[MLoc(pos, i, m)];
                         }
 
-
-
-                        //Move down in i and get v1 in i (hermitian conj) OK
+                        //Move down in i and get v1 in i (hermitian conj)
                         MD(pos, i);
                         HermConj(pos, i, v1);
 
-                        //Move down in d and get v2 in d (hermitian conj) OK
-                        // and get v3 in i OK
+                        //Move down in d and get v2 in d (hermitian conj)
+                        // and get v3 in i
                         MD(pos, d);
                         HermConj(pos, d, v2);
                         for(int m = 0; m < 4; m++) {
                                 v3[m] = Lattice[MLoc(pos, i, m)];
                         }
                         //Move up in i (original location now)
-                        // and get w3 in i (hermitian conj) OK
+                        // and get w3 in i (hermitian conj)
                         MU(pos, i);
                         HermConj(pos, i, w3);
 
 
 
-                        //Move up in i and get w2 in d (hermitian conj) OK
+                        //Move up in i and get w2 in d (hermitian conj)
                         // then move back down to original location
                         MU(pos, i);
                         HermConj(pos, d, w2);
@@ -479,15 +508,20 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
         //Get a randomly generated link matrix based on C and save to A
         RandLink(c, a);
 
-        /*
-        if(maj[0] == 7 && maj[1] == 0 && maj[2] == 0 && maj[3] == 0) {
+
+            /*
+           if(maj[0] == 0 && maj[1] == 0 && maj[2] == 0 && maj[3] == 0) {
                 for(int m = 0; m < 4; m++) {
                         printf("c Real: %f\tImag: %f\n", a[m].real(), a[m].imag());
-                        printf("abs: %f\n\n", thrust::abs(a[m]));
+                        printf("abs: %f\n", thrust::abs(a[m]));
                 }
+                printf("Const %f\n\n", pow(thrust::abs(a[0]), 2) + pow(thrust::abs(a[1]),2));
 
-        }
-        */
+           }
+           */
+
+
+
 
 
         //Save Randomized Link
@@ -522,8 +556,7 @@ LattiCuda_Device::LattiCuda_Device(int* const_size, double *const_beta, thrust::
 
         tid = MLoc(maj, 0, 0);
 
-        //Sets random seed
-        curand_init(clock64(), tid, 0, &rng);
+
 
 
 };
@@ -568,44 +601,35 @@ LattiCuda_Device::Initialize(){
 __device__ void
 LattiCuda_Device::Equilibrate(int dir){
 
+
         //Checkerboard pattern for blocks
         int Bremainder = (blockIdx.x + blockIdx.y + blockIdx.z)%2;
 
         //Checkerboard pattern for threads
         int Tremainder = (min[1] + min[2] + min[3])%2;
 
-        if(Bremainder == 0) {
-                //Populate();
-
-                if(Tremainder == 0) {
-                        ThreadEquilibrate(dir);
-                }
-                __syncthreads();
-
-                if(Tremainder == 1) {
-                        ThreadEquilibrate(dir);
-                }
-                __syncthreads();
-
+        if(Bremainder == 0 && Tremainder == 0) {
+                ThreadEquilibrate(dir);
         }
         __syncthreads();
 
-        if(Bremainder == 1) {
-                //Populate();
 
-                if(Tremainder == 0) {
-                        ThreadEquilibrate(dir);
-                }
-                __syncthreads();
-
-                if(Tremainder == 1) {
-                        ThreadEquilibrate(dir);
-                }
-                __syncthreads();
-
+        if(Bremainder == 0 && Tremainder == 1) {
+                ThreadEquilibrate(dir);
         }
         __syncthreads();
 
+
+        if(Bremainder == 1 && Tremainder == 0) {
+                ThreadEquilibrate(dir);
+        }
+        __syncthreads();
+
+
+        if(Bremainder == 1 && Tremainder == 1) {
+                ThreadEquilibrate(dir);
+        }
+        __syncthreads();
 };
 
 

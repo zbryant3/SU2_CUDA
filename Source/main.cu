@@ -22,7 +22,7 @@
 //   Definition of all the variables   *
 //**************************************
 #define LATTSIZE 8
-#define BETA 2.7
+#define BETA 2.0
 
 
 
@@ -37,10 +37,19 @@ int main()
 {
         LattiCuda model(LATTSIZE, BETA);
 
-        for(int i = 0; i < 5; i++){
-          cout << model.AvgPlaquette() << "\n";
+        fstream File;
+        double temp;
+
+        File.open("AvgPlaq_vs_Equilibration.dat", ios::out | ios::trunc);
+
+        for(int i = 0; i < 10; i++){
+          temp = model.AvgPlaquette();
+          cout << temp << "\n";
+          File << i << " " << temp << "\n";
+          File.flush();
           model.Equilibrate();
         }
+        File.close();
 
 
         return 0;
