@@ -277,8 +277,8 @@ LattiCuda_Device::MaMult(thrust::complex<double> *m1, thrust::complex<double> *m
 
         r[0] = m1[0] * m2[0] + m1[1] * m2[2];
         r[1] = m1[0] * m2[1] + m1[1] * m2[3];
-        r[2] = m1[2] * m2[0] + m1[3] * m2[2];
-        r[3] = m1[2] * m2[1] + m1[3] * m2[3];
+        r[2] = (-1)*thrust::conj(r[1]);
+        r[3] = thrust::conj(r[0]);
 
 };
 
@@ -324,9 +324,9 @@ __device__ void
 LattiCuda_Device::HermConj(int *pos, int d, thrust::complex<double> *in){
 
         in[0] = thrust::conj(Lattice[MLoc(pos, d, 0)]);
-        in[1] = thrust::conj(Lattice[MLoc(pos, d, 2)]);
+        in[1] = (-1)*Lattice[MLoc(pos, d, 1)];
         in[2] = thrust::conj(Lattice[MLoc(pos, d, 1)]);
-        in[3] = thrust::conj(Lattice[MLoc(pos, d, 3)]);
+        in[3] = Lattice[MLoc(pos, d, 0)];
 };
 
 
@@ -338,20 +338,29 @@ LattiCuda_Device::HermConj(int *pos, int d, thrust::complex<double> *in){
 __device__ void
 LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> *out){
 
+
         thrust::complex<double> temp = (in[0]*in[3] - in[1]*in[2]);
 
         double sdet = sqrt(temp.real());
         double y[4], r[4];
 
+
         /*
-           if(maj[0] == 0 && maj[1] == 0 && maj[2] == 0 && maj[3] == 0){
-           printf("Sdet %f\n", sdet);
-           }
+           //Normalize the input matrix
+           for(int i = 0; i < 4; i++)
+               in[i] = in[i] / sdet;
          */
 
-        //Normalize the input matrix
-        for(int i = 0; i < 4; i++)
-                in[i] = in[i] / sdet;
+        sdet = sqrt(pow(thrust::abs(in[0]),2) + pow(thrust::abs(in[1]),2));
+        in[0] = in[0]/sdet;
+        in[1] = in[1]/sdet;
+        in[2] = thrust::conj((-1)*in[1]);
+        in[3] = thrust::conj(in[0]);
+
+
+
+
+
 
         //Generate one acceptable number based on heatbath
         do {
@@ -393,36 +402,19 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
 
         //Get the hermition conjugate of the input matrix
         w[0] = thrust::conj(in[0]);
-        w[1] = thrust::conj(in[2]);
+        w[1] = (-1)*in[1];
         w[2] = thrust::conj(in[1]);
-        w[3] = thrust::conj(in[3]);
+        w[3] = in[0];
 
         //Multiply the generated matrix and the hermition conjugate
         //And save to the output matrix
         MaMult(m, w, out);
 
-        /*
-        temp = out[0] * out[3] - out[1] * out[2];
-        sdet = sqrt(temp.real());
-        for(int m = 0; m < 4; m++){
-          out[m] = out[m]/sdet;
-        }
-        */
-
-
-       sdet = pow(thrust::abs(out[0]),2) + pow(thrust::abs(out[1]),2);
-       out[0] = out[0]/sdet;
-       out[1] = out[1]/sdet;
-       out[2] = thrust::conj((-1)*out[1]);
-       out[3] = thrust::conj(out[0]);
-
-        /*
-        if(maj[0] == 0 && maj[1] == 0 && maj[2] == 0 && maj[3] == 0) {
-                printf("%.20g\n",sdet);
-        }
-        */
-
-
+        sdet = sqrt(pow(thrust::abs(out[0]),2) + pow(thrust::abs(out[1]),2));
+        out[0] = out[0]/sdet;
+        out[1] = out[1]/sdet;
+        out[2] = thrust::conj((-1)*out[1]);
+        out[3] = thrust::conj(out[0]);
 
 };
 
@@ -501,28 +493,13 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
                         for(int k = 0; k < 4; k++) {
                                 c[k] += (a[k] + b[k]);
                         }
+
                 }
 
         }
 
         //Get a randomly generated link matrix based on C and save to A
         RandLink(c, a);
-
-
-            /*
-           if(maj[0] == 0 && maj[1] == 0 && maj[2] == 0 && maj[3] == 0) {
-                for(int m = 0; m < 4; m++) {
-                        printf("c Real: %f\tImag: %f\n", a[m].real(), a[m].imag());
-                        printf("abs: %f\n", thrust::abs(a[m]));
-                }
-                printf("Const %f\n\n", pow(thrust::abs(a[0]), 2) + pow(thrust::abs(a[1]),2));
-
-           }
-           */
-
-
-
-
 
         //Save Randomized Link
         for(int k = 0; k < 4; k++)
