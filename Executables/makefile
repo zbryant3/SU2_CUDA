@@ -1,10 +1,16 @@
 CC = nvcc
 CFLAGS = -arch=sm_35 --ptxas-options -v
 LFLAGS = -o
-MAINFLAGS = -I -lboost_iostreams -lboost_system -lboost_filesystem
+MAINFLAGS =
 
 
-OBJ_FILES = $(wildcard ../Source/*.o)
+AVGOBJ_FILES = ../Source/LattiCuda_Device.o ../Source/avgplaq.o ../Source/LattiCuda.o
+TIMER_FILES = ../Source/LattiCuda_Device.o ../Source/timing.o ../Source/LattiCuda.o
 
-QCD: $(OBJ_FILES)
-	$(CC) $(CFLAGS) $(OBJ_FILES) $(LFLAGS) $@ $(MAINFLAGS)
+all: AVGPLAQ TIMER
+
+AVGPLAQ: $(AVGOBJ_FILES)
+	$(CC) $(CFLAGS) $(AVGOBJ_FILES) $(LFLAGS) $@ $(MAINFLAGS)
+
+TIMER: $(TIMER_FILES)
+		$(CC) $(CFLAGS) $(TIMER_FILES) $(LFLAGS) $@ $(MAINFLAGS)

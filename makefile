@@ -1,12 +1,12 @@
 SUBDIRS := Source Executables
 
 OBJECTS = $(wildcard ./Source/*.o)
-EXEC = ./Executables/QCD
+EXEC = ./Executables/AVGPLAQ
 
 all:
-	$(MAKE) -w -C Source
-	$(MAKE) -w -C Executables
+	@$(MAKE) -w -C Source
+	@$(MAKE) -w -C Executables
 
 clean:
-	rm $(OBJECTS)
-	rm $(EXEC)
+	@rm $(OBJECTS)
+	@rm $(EXEC)
