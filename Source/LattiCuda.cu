@@ -85,8 +85,8 @@ LattiCuda::Initialize(){
         dim3 in_Threads(2, 2, 2);
         dim3 in_Blocks(half, half, half);
 
-        for(int t = 0; t < h_size; t++){
-          GPU_Initialize<<<in_Blocks,in_Threads>>>(d_lattice, t);
+        for(int t = 0; t < h_size; t++) {
+                GPU_Initialize<<<in_Blocks,in_Threads>>>(d_lattice, t);
         }
 };
 
@@ -144,32 +144,36 @@ LattiCuda::~LattiCuda(){
 __host__ void
 LattiCuda::Equilibrate(){
 
-        int half = h_size/2;
+        int half = h_size/4;
 
         //Dimensions for the kernal
-        dim3 Threads(2, 2, 2);
+        dim3 Threads(4, 4, 4);
         dim3 Blocks(half, half, half);
 
+
+        int sharedsize = 0;
+/*
         //Max shared size is 49152
         int sharedsize = ((h_size)/(half) + 2) * ((h_size)/(half) + 2)
-                         * ((h_size)/(half) + 2) * 768;
+ * ((h_size)/(half) + 2) * 768;
 
         //Ensures shared size isnt too large
         if(sharedsize > 49152) {
                 cout << "Shared memory size too large. Exiting... \n \n";
                 exit(EXIT_FAILURE);
         }
+ */
 
         //All directions need to updated independently
-        for(int d = 0; d < 4; d++){
+        for(int d = 0; d < 4; d++) {
 
-          //Checkerboard pattern for T dimension
-          for(int offset = 0; offset <= 1; offset++) {
-            for(int tdim = 0; tdim < half; tdim++) {
-              GPU_Equilibrate<<<Blocks, Threads, sharedsize>>>(d_lattice, ((tdim)*2 + offset), d);
-            }
-            cudaDeviceSynchronize();
-          }
+                //Checkerboard pattern for T dimension
+                for(int offset = 0; offset <= 1; offset++) {
+                        for(int tdim = 0; tdim < half; tdim++) {
+                                GPU_Equilibrate<<<Blocks, Threads, sharedsize>>>(d_lattice, ((tdim)*2 + offset), d);
+                        }
+                        cudaDeviceSynchronize();
+                }
         }
 
 };
@@ -200,15 +204,18 @@ LattiCuda::AvgPlaquette(){
         dim3 Blocks(half, half, half);
 
 
-        //Max shared size is 49152
-        int sharedsize = ((h_size)/(half) + 2) * ((h_size)/(half) + 2)
-                         * ((h_size)/(half) + 2) * 768;
 
-        //Ensures shared size isnt too large
-        if(sharedsize > 49152) {
+        int sharedsize = 0;
+        /*
+           //Max shared size is 49152
+           int sharedsize = ((h_size)/(half) + 2) * ((h_size)/(half) + 2)
+         * ((h_size)/(half) + 2) * 768;
+           //Ensures shared size isnt too large
+           if(sharedsize > 49152) {
                 cout << "Shared memory size too large. Exiting... \n \n";
                 exit(EXIT_FAILURE);
-        }
+           }
+         */
 
 
         //Run on gpu for each time slice
@@ -226,9 +233,9 @@ LattiCuda::AvgPlaquette(){
         //Evaluate results
         double totplaq{0};
         double totiter{0};
-        for(int i = 0; i < h_size*h_size*h_size*h_size; i++){
-          totplaq += h_plaq[i];
-          totiter += h_iter[i];
+        for(int i = 0; i < h_size*h_size*h_size*h_size; i++) {
+                totplaq += h_plaq[i];
+                totiter += h_iter[i];
         }
 
         cudaFree(d_plaq);
