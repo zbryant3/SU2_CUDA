@@ -26,6 +26,9 @@ private:
   thrust::complex<double> *Lattice;
   thrust::complex<double> *SubLattice;
 
+   // -1 since older version of thrust cant handle multiplying by an integer
+  thrust::complex<double> neg = thrust::complex<double>(-1, 0);
+
   // 0 - T  / 1 - X / 2 - Y / 3 - Z
   int min[4];
   int maj[4];
