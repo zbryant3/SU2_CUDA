@@ -6,6 +6,9 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 
+extern thrust::complex<double> *major_lattice;
+extern thrust::complex<double> *SubLatt;
+
 
 
 
@@ -277,7 +280,7 @@ LattiCuda_Device::MaMult(thrust::complex<double> *m1, thrust::complex<double> *m
 
         r[0] = m1[0] * m2[0] + m1[1] * m2[2];
         r[1] = m1[0] * m2[1] + m1[1] * m2[3];
-        r[2] = (-1)*thrust::conj(r[1]);
+        r[2] = neg*thrust::conj(r[1]);
         r[3] = thrust::conj(r[0]);
 
 };
@@ -324,7 +327,7 @@ __device__ void
 LattiCuda_Device::HermConj(int *pos, int d, thrust::complex<double> *in){
 
         in[0] = thrust::conj(Lattice[MLoc(pos, d, 0)]);
-        in[1] = (-1)*Lattice[MLoc(pos, d, 1)];
+        in[1] = neg*Lattice[MLoc(pos, d, 1)];
         in[2] = thrust::conj(Lattice[MLoc(pos, d, 1)]);
         in[3] = Lattice[MLoc(pos, d, 0)];
 };
@@ -354,7 +357,7 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
         sdet = sqrt(pow(thrust::abs(in[0]),2) + pow(thrust::abs(in[1]),2));
         in[0] = in[0]/sdet;
         in[1] = in[1]/sdet;
-        in[2] = thrust::conj((-1)*in[1]);
+        in[2] = thrust::conj(neg*in[1]);
         in[3] = thrust::conj(in[0]);
 
 
@@ -402,7 +405,7 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
 
         //Get the hermition conjugate of the input matrix
         w[0] = thrust::conj(in[0]);
-        w[1] = (-1)*in[1];
+        w[1] = neg*in[1];
         w[2] = thrust::conj(in[1]);
         w[3] = in[0];
 
@@ -413,7 +416,7 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
         sdet = sqrt(pow(thrust::abs(out[0]),2) + pow(thrust::abs(out[1]),2));
         out[0] = out[0]/sdet;
         out[1] = out[1]/sdet;
-        out[2] = thrust::conj((-1)*out[1]);
+        out[2] = thrust::conj(neg*out[1]);
         out[3] = thrust::conj(out[0]);
 
 };
@@ -516,8 +519,7 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
  * Constructor for the Lattice QCD wrapper
  */
 __device__
-LattiCuda_Device::LattiCuda_Device(int* const_size, double *const_beta, thrust::complex<double> *major_lattice,
-                                   thrust::complex<double> *SubLatt, int t){
+LattiCuda_Device::LattiCuda_Device(int* const_size, double *const_beta, thrust::complex<double> *major_lattice, thrust::complex<double> *SubLatt, int t){
 
         size = const_size;
 
