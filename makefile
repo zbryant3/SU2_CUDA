@@ -1,7 +1,7 @@
 SUBDIRS := Source Executables
 
 OBJECTS = $(wildcard ./Source/*.o)
-EXEC = ./Executables/AVGPLAQ
+EXEC = ./Executables/AVGPLAQ ./Executables/TIMER
 
 all:
 	@$(MAKE) -w -C Source
