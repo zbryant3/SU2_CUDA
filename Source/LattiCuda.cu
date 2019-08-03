@@ -1,5 +1,6 @@
 #include "./Headers/LattiCuda.cuh"
 #include "./Headers/LattiCuda_Device.cuh"
+#include "./Headers/Complex.cuh"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +30,7 @@ __constant__ double d_beta;
  * Initializes all the links on the lattice to the unit matrix
  */
 __global__ void
-GPU_Initialize(thrust::complex<double> *d_lattice, int tdim){
+GPU_Initialize(bach::complex<double> *d_lattice, int tdim){
 
         LattiCuda_Device device(&d_size, &d_beta, d_lattice, NULL, tdim);
 
@@ -42,10 +43,10 @@ GPU_Initialize(thrust::complex<double> *d_lattice, int tdim){
  * @param  d_lattice - Pointer to the lattice in device memory
  */
 __global__ void
-GPU_Equilibrate(thrust::complex<double> *d_lattice, int tdim, int dir){
+GPU_Equilibrate(bach::complex<double> *d_lattice, int tdim, int dir){
 
         //Shared sublattice memory with size determined at kernal launch
-        extern __shared__ thrust::complex<double> sub_lattice[];
+        extern __shared__ bach::complex<double> sub_lattice[];
 
         LattiCuda_Device device(&d_size, &d_beta, d_lattice, sub_lattice, tdim);
 
@@ -59,10 +60,10 @@ GPU_Equilibrate(thrust::complex<double> *d_lattice, int tdim, int dir){
  * Gets the average plaquette of the lattice
  */
 __global__ void
-GPU_AvgPlaquette(thrust::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter){
+GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter){
 
         //Shared sublattice memory with size determined at kernal launch
-        extern __shared__ thrust::complex<double> sub_lattice[];
+        extern __shared__ bach::complex<double> sub_lattice[];
 
         LattiCuda_Device device(&d_size, &d_beta, d_lattice, sub_lattice, tdim);
 
@@ -110,10 +111,10 @@ LattiCuda::LattiCuda(int LattSize, double inBeta){
         memsize = h_size*h_size*h_size*h_size*4*4;
 
         //Create Host Lattice
-        h_lattice = new thrust::complex<double>[memsize];
+        h_lattice = new bach::complex<double>[memsize];
 
         //Create Device Lattice
-        cudaMalloc((void**)&d_lattice, memsize*sizeof(thrust::complex<double>));
+        cudaMalloc((void**)&d_lattice, memsize*sizeof(bach::complex<double>));
 
         //Construct Constant Device Variables
         cudaMemcpyToSymbol(d_size, &h_size, sizeof(int));

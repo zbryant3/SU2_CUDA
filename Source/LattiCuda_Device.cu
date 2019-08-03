@@ -1,4 +1,5 @@
 #include "./Headers/LattiCuda_Device.cuh"
+#include "./Headers/Complex.cuh"
 
 #include <stdio.h>
 
@@ -6,8 +7,8 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 
-extern thrust::complex<double> *major_lattice;
-extern thrust::complex<double> *SubLatt;
+extern bach::complex<double> *major_lattice;
+extern bach::complex<double> *SubLatt;
 
 
 
@@ -276,12 +277,12 @@ LattiCuda_Device::IniPos(int t){
  * @param  r  - Result
  */
 __device__ void
-LattiCuda_Device::MaMult(thrust::complex<double> *m1, thrust::complex<double> *m2, thrust::complex<double> *r){
+LattiCuda_Device::MaMult(bach::complex<double> *m1, bach::complex<double> *m2, bach::complex<double> *r){
 
-        r[0] = m1[0] * m2[0] + m1[1] * m2[2];
-        r[1] = m1[0] * m2[1] + m1[1] * m2[3];
-        r[2] = neg*thrust::conj(r[1]);
-        r[3] = thrust::conj(r[0]);
+        r[0] = m1[0]*m2[0] + m1[1]*m2[2];
+        r[1] = m1[0]*m2[1] + m1[1]*m2[3];
+        r[2] = neg*bach::conj(r[1]);
+        r[3] = bach::conj(r[0]);
 
 };
 
@@ -324,11 +325,11 @@ LattiCuda_Device::RandDouble(int t){
 
 
 __device__ void
-LattiCuda_Device::HermConj(int *pos, int d, thrust::complex<double> *in){
+LattiCuda_Device::HermConj(int *pos, int d, bach::complex<double> *in){
 
-        in[0] = thrust::conj(Lattice[MLoc(pos, d, 0)]);
+        in[0] = bach::conj(Lattice[MLoc(pos, d, 0)]);
         in[1] = neg*Lattice[MLoc(pos, d, 1)];
-        in[2] = thrust::conj(Lattice[MLoc(pos, d, 1)]);
+        in[2] = bach::conj(Lattice[MLoc(pos, d, 1)]);
         in[3] = Lattice[MLoc(pos, d, 0)];
 };
 
@@ -339,10 +340,10 @@ LattiCuda_Device::HermConj(int *pos, int d, thrust::complex<double> *in){
  * @param  out - Output Matrix
  */
 __device__ void
-LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> *out){
+LattiCuda_Device::RandLink(bach::complex<double> *in, bach::complex<double> *out){
 
 
-        thrust::complex<double> temp = (in[0]*in[3] - in[1]*in[2]);
+        bach::complex<double> temp = (in[0]*in[3] - in[1]*in[2]);
 
         double sdet = sqrt(temp.real());
         double y[4], r[4];
@@ -354,11 +355,11 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
                in[i] = in[i] / sdet;
          */
 
-        sdet = sqrt(pow(thrust::abs(in[0]),2) + pow(thrust::abs(in[1]),2));
+        sdet = sqrt(pow(bach::abs(in[0]),2) + pow(bach::abs(in[1]),2));
         in[0] = in[0]/sdet;
         in[1] = in[1]/sdet;
-        in[2] = thrust::conj(neg*in[1]);
-        in[3] = thrust::conj(in[0]);
+        in[2] = bach::conj(neg*in[1]);
+        in[3] = bach::conj(in[0]);
 
 
 
@@ -396,28 +397,28 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
         for(int i = 1; i < 4; i++)
                 y[i] = sqrt(1 - pow(y[0],2)) * (r[i]/sqrt(pow(r[1],2) + pow(r[2],2) + pow(r[3],2)));
 
-        thrust::complex<double> m[4], w[4];
+        bach::complex<double> m[4], w[4];
 
-        m[0] = thrust::complex<double>(y[0], y[3]);
-        m[1] = thrust::complex<double>(y[2], y[1]);
-        m[2] = thrust::complex<double>((-1)*y[2], y[1]);
-        m[3] = thrust::complex<double>(y[0], (-1)*y[3]);
+        m[0] = bach::complex<double>(y[0], y[3]);
+        m[1] = bach::complex<double>(y[2], y[1]);
+        m[2] = bach::complex<double>((-1)*y[2], y[1]);
+        m[3] = bach::complex<double>(y[0], (-1)*y[3]);
 
         //Get the hermition conjugate of the input matrix
-        w[0] = thrust::conj(in[0]);
+        w[0] = bach::conj(in[0]);
         w[1] = neg*in[1];
-        w[2] = thrust::conj(in[1]);
+        w[2] = bach::conj(in[1]);
         w[3] = in[0];
 
         //Multiply the generated matrix and the hermition conjugate
         //And save to the output matrix
         MaMult(m, w, out);
 
-        sdet = sqrt(pow(thrust::abs(out[0]),2) + pow(thrust::abs(out[1]),2));
+        sdet = sqrt(pow(bach::abs(out[0]),2) + pow(bach::abs(out[1]),2));
         out[0] = out[0]/sdet;
         out[1] = out[1]/sdet;
-        out[2] = thrust::conj(neg*out[1]);
-        out[3] = thrust::conj(out[0]);
+        out[2] = bach::conj(neg*out[1]);
+        out[3] = bach::conj(out[0]);
 
 };
 
@@ -428,9 +429,9 @@ LattiCuda_Device::RandLink(thrust::complex<double> *in, thrust::complex<double> 
 __device__ void
 LattiCuda_Device::ThreadEquilibrate(int d) {
 
-        thrust::complex<double> a[4], b[4], c[4];
-        thrust::complex<double> w[4], w1[4], w2[4], w3[4];
-        thrust::complex<double> v[4], v1[4], v2[4], v3[4];
+        bach::complex<double> a[4], b[4], c[4];
+        bach::complex<double> w[4], w1[4], w2[4], w3[4];
+        bach::complex<double> v[4], v1[4], v2[4], v3[4];
 
         int pos[4];
 
@@ -444,7 +445,7 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
 
         //Initialize C
         for(int j = 0; j < 4; j++) {
-                c[j] = thrust::complex<double>(0,0);
+                c[j] = bach::complex<double>(0,0);
         }
 
 
@@ -494,7 +495,7 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
 
 
                         for(int k = 0; k < 4; k++) {
-                                c[k] += (a[k] + b[k]);
+                                c[k] = c[k] + (a[k] + b[k]);
                         }
 
                 }
@@ -519,7 +520,7 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
  * Constructor for the Lattice QCD wrapper
  */
 __device__
-LattiCuda_Device::LattiCuda_Device(int* const_size, double *const_beta, thrust::complex<double> *major_lattice, thrust::complex<double> *SubLatt, int t){
+LattiCuda_Device::LattiCuda_Device(int* const_size, double *const_beta, bach::complex<double> *major_lattice, bach::complex<double> *SubLatt, int t){
 
         size = const_size;
 
@@ -560,13 +561,13 @@ LattiCuda_Device::Initialize(){
         //Set links in all directions to the unit matrix
         for(int d = 0; d < 4; d++) {
                 Lattice[MLoc(maj,d,0)]
-                        = thrust::complex<double>(1,0);
+                        = bach::complex<double>(1,0);
                 Lattice[MLoc(maj,d,1)]
-                        = thrust::complex<double>(0,0);
+                        = bach::complex<double>(0,0);
                 Lattice[MLoc(maj,d,2)]
-                        = thrust::complex<double>(0,0);
+                        = bach::complex<double>(0,0);
                 Lattice[MLoc(maj,d,3)]
-                        = thrust::complex<double>(1,0);
+                        = bach::complex<double>(1,0);
 
         }
         __syncthreads();
@@ -620,8 +621,8 @@ LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
 
         //Populate();
 
-        thrust::complex<double> w[4], w1[4], w2[4], w3[4], w4[4];
-        thrust::complex<double> v[4];
+        bach::complex<double> w[4], w1[4], w2[4], w3[4], w4[4];
+        bach::complex<double> v[4];
         int pos[4];
 
         plaq[tid] = 0;
@@ -661,7 +662,7 @@ LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
 
                                 MaMult( w, v, w1);
 
-                                thrust::complex<double> temp = (w1[0] + w1[3]);
+                                bach::complex<double> temp = (w1[0] + w1[3]);
 
                                 plaq[tid] += 0.5*temp.real();
                                 iter[tid] += 1;

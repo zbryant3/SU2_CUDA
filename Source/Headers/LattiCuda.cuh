@@ -12,9 +12,7 @@
 //*********************
 //    Header Files    *
 //*********************
-
-//Complex variables for both host and device use
-#include <thrust/complex.h>
+#include "Complex.cuh"
 
 
 
@@ -27,21 +25,21 @@
  * @param  d_lattice - Pointer to the lattice in device memory
  */
 __global__ void
-GPU_Initialize(thrust::complex<double> *d_lattice, int tdim);
+GPU_Initialize(bach::complex<double> *d_lattice, int tdim);
 
 /**
  * Equilibrates the lattice using the GPU.
  * @param  d_lattice - Pointer to the lattice in device memory
  */
 __global__ void
-GPU_Equilibrate(thrust::complex<double> *d_lattice, int tdim, int dir);
+GPU_Equilibrate(bach::complex<double> *d_lattice, int tdim, int dir);
 
 
 /**
  * Gets the average plaquette of the lattice
  */
 __global__ void
-GPU_AvgPlaquette(thrust::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter);
+GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter);
 
 
 
@@ -52,13 +50,14 @@ GPU_AvgPlaquette(thrust::complex<double> *d_lattice, int tdim, double *d_plaq, d
 class LattiCuda {
 private:
   //Host Variables
-  thrust::complex<double> *h_lattice; //16 bytes per element
+  bach::complex<double> *h_lattice; //16 bytes per element
   int h_size;
   double h_beta;
   int memsize;
 
+
   //GPU Variables
-  thrust::complex<double> *d_lattice;
+  bach::complex<double> *d_lattice;
 
   /*  Constant GPU Variables
   - Defined in class code since constant variables must be in a global scope

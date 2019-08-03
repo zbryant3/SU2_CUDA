@@ -6,8 +6,7 @@
 
 #ifndef LATTIDEVICE_H
 #define LATTIDEVICE_H
-
-#include <thrust/complex.h>
+#include "Complex.cuh"
 
 
 //CUDA enabled random number generator
@@ -23,11 +22,11 @@ private:
   int *size;
   double *beta;
   int sharedcalc;
-  thrust::complex<double> *Lattice;
-  thrust::complex<double> *SubLattice;
+  bach::complex<double> *Lattice;
+  bach::complex<double> *SubLattice;
 
-   // -1 since older version of thrust cant handle multiplying by an integer
-  thrust::complex<double> neg = thrust::complex<double>(-1, 0);
+   // -1 since older version of bach cant handle multiplying by an integer
+  bach::complex<double> neg = bach::complex<double>(-1, 0);
 
   // 0 - T  / 1 - X / 2 - Y / 3 - Z
   int min[4];
@@ -81,7 +80,7 @@ private:
 
 
   __device__ void
-  HermConj(int *pos, int d, thrust::complex<double> *in);
+  HermConj(int *pos, int d, bach::complex<double> *in);
 
   /**
    * Creates a random link based on the input matrix
@@ -89,7 +88,7 @@ private:
    * @param  out - Output Matrix
    */
   __device__ void
-  RandLink(thrust::complex<double> *in, thrust::complex<double> *out);
+  RandLink(bach::complex<double> *in, bach::complex<double> *out);
 
   /**
    * Generates a random integer from 0 to (t - 1)
@@ -138,7 +137,7 @@ private:
    * @param  r  - Result
    */
   __device__ void
-  MaMult(thrust::complex<double> *m1, thrust::complex<double> *m2, thrust::complex<double> *r);
+  MaMult(bach::complex<double> *m1, bach::complex<double> *m2, bach::complex<double> *r);
 
 public:
 
@@ -146,8 +145,8 @@ public:
    * Constructor for the Lattice QCD wrapper
    */
   __device__
-  LattiCuda_Device(int *const_size, double *const_beta, thrust::complex<double> *major_lattice,
-     thrust::complex<double> *SubLatt = NULL, int t = 0);
+  LattiCuda_Device(int *const_size, double *const_beta, bach::complex<double> *major_lattice,
+     bach::complex<double> *SubLatt = NULL, int t = 0);
 
   /**
    * Destructor for the Lattice QCD wrapper
