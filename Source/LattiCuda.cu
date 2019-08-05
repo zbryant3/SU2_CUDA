@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <fstream>
 
 
 using namespace std;
@@ -89,6 +90,25 @@ LattiCuda::Initialize(){
         for(int t = 0; t < h_size; t++) {
                 GPU_Initialize<<<in_Blocks,in_Threads>>>(d_lattice, t);
         }
+};
+
+
+
+/**
+ * Returns 1D array location for linearized 4D lattice
+ * @param  dim - Array with lattice dimension location t,x,y,z
+ * @param  d   - Direction to look in
+ * @param  m   - Matrix element for link
+ * @return     - Int for array location
+ */
+__host__ int
+LattiCuda::Loc(int *dim, int d, int m){
+  int coor{0};
+
+  coor = dim[1] + dim[2]*(h_size) + dim[3]*(h_size)*(h_size) + dim[0]*(h_size)*(h_size)*(h_size)
+         + d*(h_size)*(h_size)*(h_size)*(h_size) + m*(h_size)*(h_size)*(h_size)*(h_size)*(4);
+
+  return coor;
 };
 
 
@@ -188,7 +208,10 @@ LattiCuda::Equilibrate(){
 __host__ double
 LattiCuda::AvgPlaquette(){
 
-        int half = h_size/2;
+        int half = h_size/4;
+        //Dimensions for the kernal
+        dim3 Threads(4, 4, 4);
+        dim3 Blocks(half, half, half);
 
 
         //Array to hold total avg plaquett per thread and total amount of iterations
@@ -200,9 +223,6 @@ LattiCuda::AvgPlaquette(){
         cudaMalloc((void**)&d_plaq, sizeof(double)*h_size*h_size*h_size*h_size);
         cudaMalloc((void**)&d_iter, sizeof(double)*h_size*h_size*h_size*h_size);
 
-        //Dimensions for the kernal
-        dim3 Threads(2, 2, 2);
-        dim3 Blocks(half, half, half);
 
 
 
@@ -243,4 +263,92 @@ LattiCuda::AvgPlaquette(){
         cudaFree(d_iter);
 
         return (1 - totplaq/totiter);
+};
+
+
+
+
+
+/**
+ * Saves the lattice configuration to a file.
+ */
+__host__ void
+LattiCuda::Save(){
+  printf("Saving Lattice Configuration......\n");
+
+  //Copy device lattice to host lattice
+  cudaMemcpy(h_lattice, d_lattice, memsize*sizeof(bach::complex<double>), cudaMemcpyDeviceToHost);
+  cudaDeviceSynchronize();
+
+  //File to write to
+  fstream File1;
+  File1.open("../Data/LatticeConfig.dat", ios::out | ios::trunc);
+
+  int pos[4] = {0,0,0,0};
+  for( pos[0] = 0; pos[0] < h_size; pos[0]++){ // T dimension
+    for( pos[1] = 0; pos[1] < h_size; pos[1]++){ // X dimension
+      for( pos[2] = 0; pos[2] < h_size; pos[2]++){ // Y dimension
+        for( pos[3] = 0; pos[3] < h_size; pos[3]++){ // Z dimension
+          for(int d = 0; d < 4; d++){ // direction
+            File1 << h_lattice[Loc(pos, d, 0)].real() << " " << h_lattice[Loc(pos, d, 0)].imag()
+            << " " << h_lattice[Loc(pos, d, 1)].real() << " " << h_lattice[Loc(pos, d, 1)].imag() << endl;
+          }
+        }
+      }
+    }
+  }
+
+  File1.close();
+
+  printf("Done Saving.\n");
+
+
+};
+
+
+
+/**
+ * Loads a lattice configuration from a file
+ * @param  file - File to load from
+ */
+__host__ void
+LattiCuda::Load(string file){
+  printf("Loading Lattice Configuration.......\n");
+
+  fstream File;
+  File.open(file, ios::in);
+
+  double real, imag;
+
+
+  int pos[4] = {0,0,0,0};
+  for( pos[0] = 0; pos[0] < h_size; pos[0]++){ // T dimension
+    for( pos[1] = 0; pos[1] < h_size; pos[1]++){ // X dimension
+      for( pos[2] = 0; pos[2] < h_size; pos[2]++){ // Y dimension
+        for( pos[3] = 0; pos[3] < h_size; pos[3]++){ // Z dimension
+          for(int d = 0; d < 4; d++){ // direction
+            File >> real;
+            File >> imag;
+            h_lattice[Loc(pos, d, 0)] = bach::complex<double>(real, imag);
+            h_lattice[Loc(pos, d, 3)] = bach::complex<double>(real, (-1)*imag);
+
+            File >> real;
+            File >> imag;
+            h_lattice[Loc(pos, d, 1)] = bach::complex<double>(real, imag);
+            h_lattice[Loc(pos, d, 2)] = bach::complex<double>((-1)*real, imag);
+          }
+        }
+      }
+    }
+  }
+
+  File.close();
+
+  //Copy host lattice to device lattice
+  cudaMemcpy(d_lattice, h_lattice, memsize*sizeof(bach::complex<double>), cudaMemcpyHostToDevice);
+  cudaDeviceSynchronize();
+
+  printf("Done Loading.\n");
+
+
 };

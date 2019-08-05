@@ -13,6 +13,7 @@
 //    Header Files    *
 //*********************
 #include "Complex.cuh"
+#include <string>
 
 
 
@@ -72,6 +73,17 @@ private:
   void Initialize();
 
 
+  /**
+   * Returns 1D array location for linearized 4D lattice
+   * @param  dim - Array with lattice dimension location t,x,y,z
+   * @param  d   - Direction to look in
+   * @param  m   - Matrix element for link
+   * @return     - Int for array location
+   */
+  __host__ int
+  Loc(int *dim, int d, int m);
+
+
 public:
 
   /**
@@ -103,6 +115,20 @@ public:
    */
   __host__ double
   AvgPlaquette();
+
+  /**
+   * Saves the lattice configuration to a file.
+   */
+  __host__ void
+  Save();
+
+
+  /**
+   * Loads a lattice configuration from a file
+   * @param  file - File to load from
+   */
+  __host__ void
+  Load(std::string file);
 
 
 
