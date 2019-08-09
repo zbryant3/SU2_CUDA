@@ -56,6 +56,8 @@ T imag(){
 
 
 
+
+
 /**
  * Operator for adding
  */
@@ -79,7 +81,7 @@ friend complex<T> operator-(const complex<T>& lhs,const complex<T>& rhs){
  */
 __host__ __device__
 friend complex<T> operator*(const complex<T>& lhs, const complex<T>& rhs){
-        double r,i;
+        T r,i;
         r = lhs.x*rhs.x - lhs.y*rhs.y;
         i = lhs.x*rhs.y + lhs.y*rhs.x;
         return complex<T>(r,i);
