@@ -1,5 +1,5 @@
 CC = nvcc
-CFLAGS = -arch=sm_35 --ptxas-options -v
+CFLAGS = -arch=sm_35 -prec-sqrt=true --ptxas-options -v
 LFLAGS = -o
 MAINFLAGS =
 

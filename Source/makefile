@@ -1,5 +1,5 @@
 CC = nvcc
-CFLAGS = -arch=sm_35 -std=c++11 -dc -o
+CFLAGS = -arch=sm_35 -std=c++11 -prec-sqrt=true -dc -o
 LFLAGS =
 MAINFLAGS =
 SOURCE_FILES = $(wildcard *.cu)
