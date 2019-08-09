@@ -63,10 +63,7 @@ GPU_Equilibrate(bach::complex<double> *d_lattice, int tdim, int dir){
 __global__ void
 GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter){
 
-        //Shared sublattice memory with size determined at kernal launch
-        extern __shared__ bach::complex<double> sub_lattice[];
-
-        LattiCuda_Device device(&d_size, &d_beta, d_lattice, sub_lattice, tdim);
+        LattiCuda_Device device(&d_size, &d_beta, d_lattice, NULL, tdim);
 
         device.AvgPlaquette(d_plaq, d_iter);
 
@@ -83,8 +80,8 @@ GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, dou
 __host__ void
 LattiCuda::Initialize(){
 
-        int half = h_size/2;
-        dim3 in_Threads(2, 2, 2);
+        int half = h_size/4;
+        dim3 in_Threads(4, 4, 4);
         dim3 in_Blocks(half, half, half);
 
         for(int t = 0; t < h_size; t++) {
@@ -224,24 +221,9 @@ LattiCuda::AvgPlaquette(){
         cudaMalloc((void**)&d_iter, sizeof(double)*h_size*h_size*h_size*h_size);
 
 
-
-
-        int sharedsize = 0;
-        /*
-           //Max shared size is 49152
-           int sharedsize = ((h_size)/(half) + 2) * ((h_size)/(half) + 2)
-         * ((h_size)/(half) + 2) * 768;
-           //Ensures shared size isnt too large
-           if(sharedsize > 49152) {
-                cout << "Shared memory size too large. Exiting... \n \n";
-                exit(EXIT_FAILURE);
-           }
-         */
-
-
         //Run on gpu for each time slice
         for(int tdim = 0; tdim < h_size; tdim++) {
-                GPU_AvgPlaquette<<<Blocks, Threads, sharedsize>>>
+                GPU_AvgPlaquette<<<Blocks, Threads>>>
                 (d_lattice, tdim, d_plaq, d_iter);
         }
         cudaDeviceSynchronize();
@@ -249,7 +231,7 @@ LattiCuda::AvgPlaquette(){
         //Copy results from gpu
         cudaMemcpy(h_plaq, d_plaq, sizeof(double)*h_size*h_size*h_size*h_size, cudaMemcpyDeviceToHost);
         cudaMemcpy(h_iter, d_iter, sizeof(double)*h_size*h_size*h_size*h_size, cudaMemcpyDeviceToHost);
-
+        cudaDeviceSynchronize();
 
         //Evaluate results
         double totplaq{0};
