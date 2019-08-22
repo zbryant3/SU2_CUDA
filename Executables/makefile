@@ -1,12 +1,12 @@
 CC = nvcc
-CFLAGS = -arch=sm_35 -prec-sqrt=true --ptxas-options -v
+CFLAGS = -arch=sm_35 --ptxas-options -v
 LFLAGS = -o
 MAINFLAGS =
 
 
 AVGOBJ_FILES = ../Source/LattiCuda_Device.o ../Source/avgplaq.o ../Source/LattiCuda.o
 TIMER_FILES = ../Source/LattiCuda_Device.o ../Source/timing.o ../Source/LattiCuda.o
-TEST_FILES = ../Source/test.o ../Source/Complex.o
+TEST_FILES = ../Source/test.o ../Source/LattiCuda_Device.o ../Source/LattiCuda.o
 GEN_FILES = ../Source/LattiCuda_Device.o ../Source/genconfig.o ../Source/LattiCuda.o
 
 all: AVGPLAQ TIMER TEST GENCONFIG
