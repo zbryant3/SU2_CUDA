@@ -21,15 +21,12 @@ class LattiCuda_Device{
 private:
   int *size;
   double *beta;
-  int sharedcalc;
   bach::complex<double> *Lattice;
-  bach::complex<double> *SubLattice;
 
    // -1 since older version of bach cant handle multiplying by an integer
   bach::complex<double> neg = bach::complex<double>(-1, 0);
 
   // 0 - T  / 1 - X / 2 - Y / 3 - Z
-  int min[4];
   int maj[4];
 
   int tid;
@@ -45,17 +42,6 @@ private:
    */
   __device__ int
   MLoc(int *loc,int d, int m);
-
-
-  /**
-   * Gets a 1D array location based on 4D SU2 parameters - FOR SUBLATTICE
-   * @param  loc - Array for minor lattice location
-   * @param  d - direction of link
-   * @param  m - matrix element
-   * @return int  - array location for Lattice
-   */
-  __device__ int
-  SLoc(int *loc, int d, int m);
 
 
   /**
@@ -107,15 +93,6 @@ private:
   __device__ double
   RandDouble(int t);
 
-
-
-  /**
-   * Populates the sublattice based on the major lattice
-   */
-  __device__ void
-  Populate();
-
-
   /**
    * Equilibrates the lattice on thread based level
    */
@@ -145,8 +122,7 @@ public:
    * Constructor for the Lattice QCD wrapper
    */
   __device__
-  LattiCuda_Device(int *const_size, double *const_beta, bach::complex<double> *major_lattice,
-     bach::complex<double> *SubLatt = NULL, int t = 0);
+  LattiCuda_Device(int *const_size, double *const_beta, bach::complex<double> *major_lattice, int t = 0);
 
   /**
    * Destructor for the Lattice QCD wrapper
