@@ -68,7 +68,7 @@ LattiCuda_Device::MLoc(int *loc, int d, int m){
 
 
 /**
- * Initializes the position for the sublattice and major lattice
+ * Initializes the position on the major lattice
  */
 __device__ void
 LattiCuda_Device::IniPos(int t){
@@ -148,6 +148,22 @@ LattiCuda_Device::HermConj(int *pos, int d, bach::complex<double> *in){
 
 
 /**
+ * Gets a link from the major lattice
+ * @param  pos - Major Lattice position to get link from
+ * @param  d   - Direction to look in
+ * @param  in  - Input matrix
+ */
+__device__ void
+LattiCuda_Device::GetLink(int *pos, int d, bach::complex<double> *in){
+
+        for(int m = 0; m < 4; m++) {
+                in[m] = Lattice[MLoc(pos, d, m)];
+        }
+
+};
+
+
+/**
  * Creates a random link based on the input matrix
  * @param  in  - Input Matrix
  * @param  out - Output Matrix
@@ -218,13 +234,13 @@ LattiCuda_Device::RandLink(bach::complex<double> *in, bach::complex<double> *out
         MaMult(m, w, out);
 
         /*
-        //Normalize the new link - doesn't change anything up to .15 precision
-        sdet = sqrt(pow(bach::abs(out[0]),2) + pow(bach::abs(out[1]),2));
-        out[0] = out[0]/sdet;
-        out[1] = out[1]/sdet;
-        out[2] = bach::conj(neg*out[1]);
-        out[3] = bach::conj(out[0]);
-        */
+           //Normalize the new link - doesn't change anything up to .15 precision
+           sdet = sqrt(pow(bach::abs(out[0]),2) + pow(bach::abs(out[1]),2));
+           out[0] = out[0]/sdet;
+           out[1] = out[1]/sdet;
+           out[2] = bach::conj(neg*out[1]);
+           out[3] = bach::conj(out[0]);
+         */
 
 };
 
@@ -329,6 +345,46 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
         for(int k = 0; k < 4; k++)
                 Lattice[MLoc(maj, d, k)] = a[k];
 
+};
+
+
+
+/**
+ * Gets the Polykov Loop in a given position
+ * @param  pos - Spatail position to look in
+ * @param  in  - Input matrix to save product of matrices to
+ * @return     - Trace of the product of links
+ */
+__device__ void
+LattiCuda_Device::PolyLoop(int *pos, bach::complex<double> *in){
+
+
+        bach::complex<double> w1[4], w2[4], w3[4];
+
+        //Make sure we are at 0 time location
+        pos[0] = 0;
+
+        //Get first link
+        GetLink(pos, 0, w1);
+
+        //Move up in time, getting the links and then multiplying them
+        for(int k = 1; k < *size; k++) {
+
+          pos[0] = k;
+
+          GetLink(pos, 0, w2);
+
+          MaMult(w1, w2, w3);
+
+          for(int m = 0; m < 4; m++){
+            w1[m] = w3[m];
+          }
+
+        }
+
+        for(int i = 0; i < 4; i++){
+          in[i] = w1[i];
+        }
 };
 
 
@@ -487,5 +543,62 @@ LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
 
                 }
         }
+
+};
+
+
+/**
+ * Sums the polykov loop at each lattice site multiplied by the
+ * polykov loop in all spatial directions a set distance away
+ * @param  poly - Array for each thread to save its sum to a unique location
+ * @param  iter - Array for each thread to save its number of iterations
+ * @param  dist - Distance to look in each spatial direction
+ */
+__device__ void
+LattiCuda_Device::Polykov(double *poly, double *iter, int dist){
+
+        bach::complex<double> p1[4], p2[4];
+
+        //Initialize summation for thread location
+        poly[tid] = 0;
+        iter[tid] = 0;
+
+        //Get the position of the thread
+        int pos[4];
+        for(int i = 0; i < 4; i++) {
+                pos[i] = maj[i];
+        }
+
+        //Looking in all spatial dimensions
+        for(int dir = 1; dir < 4; dir++) {
+
+                //   ***First Temporal Transporter***
+                PolyLoop(pos, p1);
+
+
+                //   ***Second Temporal Transporter***
+
+                //Move up to position by a set distance
+                for(int i = 1; i <= dist; i++){
+                  MU(pos, dir);
+                }
+
+                PolyLoop(pos, p2);
+
+                //Move back down to original position
+                for(int i = 0; i < 4; i++){
+                  pos[i] = maj[i];
+                }
+
+                //Get the hermitian conjugate of the second temporal transporter
+                p2[3] = p2[0];
+                p2[2] = bach::conj(p2[1]);
+                p2[1] = neg*p2[1];
+                p2[0] = bach::conj(p2[0]);
+
+                poly[tid] += (p1[0] + p1[3]).real() * (p2[0] + p2[3]).real();
+                iter[tid] += 1;
+        }
+
 
 };

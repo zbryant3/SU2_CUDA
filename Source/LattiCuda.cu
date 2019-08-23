@@ -67,6 +67,25 @@ GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, dou
 };
 
 
+/**
+ * Gets the
+ * @param d_lattice [description]
+ * @param d_plaq    [description]
+ * @param d_iter    [description]
+ * @param dist      [description]
+ */
+__global__ void
+GPU_Polykov(bach::complex<double> *d_lattice, double *d_poly, double *d_iter, int dist){
+
+  //Create a gpu object with time slice set to zero
+  LattiCuda_Device device(&d_size, &d_beta, d_lattice, 0);
+
+  device.Polykov(d_poly, d_iter, dist);
+
+};
+
+
+
 //*******************************
 //    Private Member Functions  *
 //*******************************
@@ -97,6 +116,7 @@ LattiCuda::Initialize(){
  */
 __host__ int
 LattiCuda::Loc(int *dim, int d, int m){
+
         int coor{0};
 
         coor = dim[1] + dim[2]*(h_size) + dim[3]*(h_size)*(h_size) + dim[0]*(h_size)*(h_size)*(h_size)
@@ -239,6 +259,61 @@ LattiCuda::AvgPlaquette(){
 };
 
 
+/**
+ * Calculates the expectation value of two polykov loops
+ * @param  dist - Distance of loops
+ * @return      - Average of all lattice locations
+ */
+__host__ double
+LattiCuda::Polykov(int dist){
+
+        int split = h_size/4;
+
+        //Dimensions for the kernal
+        dim3 Threads(4, 4, 4);
+        dim3 Blocks(split, split, split);
+
+
+        //Array to hold total avg plaquett per thread and total amount of iterations
+        double *h_poly;
+        double *h_iter;
+        h_poly = new double[h_size*h_size*h_size];
+        h_iter = new double[h_size*h_size*h_size];
+
+        double *d_poly;
+        double *d_iter;
+
+        //Allocate GPU memory
+        cudaMalloc((void**)&d_poly, sizeof(double)*h_size*h_size*h_size);
+        cudaMalloc((void**)&d_iter, sizeof(double)*h_size*h_size*h_size);
+
+
+        //Run on gpu for each time slice
+        GPU_Polykov<<<Blocks, Threads>>>(d_lattice, d_poly, d_iter, dist);
+
+        cudaDeviceSynchronize();
+
+        //Copy results from gpu
+        cudaMemcpy(h_poly, d_poly, sizeof(double)*h_size*h_size*h_size, cudaMemcpyDeviceToHost);
+        cudaMemcpy(h_iter, d_iter, sizeof(double)*h_size*h_size*h_size, cudaMemcpyDeviceToHost);
+        cudaDeviceSynchronize();
+
+        //Evaluate results
+        double totpoly{0};
+        double totiter{0};
+        for(int i = 0; i < h_size*h_size*h_size; i++) {
+                //cout << i << " "<< h_plaq[i] << "\n";
+                totpoly += h_poly[i];
+                totiter += h_iter[i];
+        }
+
+        cudaFree(d_poly);
+        cudaFree(d_iter);
+        delete[] h_poly;
+        delete[] h_iter;
+
+        return totpoly/totiter;
+};
 
 
 
@@ -286,7 +361,7 @@ LattiCuda::Save(){
  * @param  file - File to load from
  */
 __host__ void
-LattiCuda::Load(string file){
+LattiCuda::Load(){
         printf("Loading Lattice Configuration.......\n");
 
         fstream File;

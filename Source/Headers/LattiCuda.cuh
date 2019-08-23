@@ -42,6 +42,16 @@ GPU_Equilibrate(bach::complex<double> *d_lattice, int tdim, int dir);
 __global__ void
 GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter);
 
+/**
+ * Gets the expectation value of
+ * @param d_lattice [description]
+ * @param d_plaq    [description]
+ * @param d_iter    [description]
+ * @param dist      [description]
+ */
+__global__ void
+GPU_Polykov(bach::complex<double> *d_lattice, double *d_poly, double *d_iter, int dist);
+
 
 
 //**************************
@@ -110,6 +120,15 @@ public:
 
 
   /**
+   * Calculates the average of two polykov loops
+   * @param  dist - Distance from
+   * @return      [description]
+   */
+  __host__ double
+  Polykov(int dist);
+
+
+  /**
    * Gets the value of the average plaquette of the lattice
    * @return double - Average Plaquette
    */
@@ -128,7 +147,7 @@ public:
    * @param  file - File to load from
    */
   __host__ void
-  Load(std::string file);
+  Load();
 
 
 

@@ -68,6 +68,16 @@ private:
   __device__ void
   HermConj(int *pos, int d, bach::complex<double> *in);
 
+
+  /**
+   * Gets a link from the major lattice
+   * @param  pos - Major Lattice position to get link from
+   * @param  d   - Direction to look in
+   * @param  in  - Input matrix
+   */
+  __device__ void
+  GetLink(int *pos, int d, bach::complex<double> *in);
+
   /**
    * Creates a random link based on the input matrix
    * @param  in  - Input Matrix
@@ -116,6 +126,15 @@ private:
   __device__ void
   MaMult(bach::complex<double> *m1, bach::complex<double> *m2, bach::complex<double> *r);
 
+  /**
+   * Gets the Polykov Loop in a given position
+   * @param  pos - Spatail position to look in
+   * @param  in  - Input matrix to save product of matrices to
+   * @return     - Trace of the product of links
+   */
+  __device__ void
+  PolyLoop(int *pos, bach::complex<double> *in);
+
 public:
 
   /**
@@ -150,6 +169,17 @@ public:
    */
   __device__ void
   AvgPlaquette(double *plaq, double *iter);
+
+
+  /**
+   * Sums the polykov loop at each lattice site multiplied by the
+   * polykov loop in all spatial directions a set distance away
+   * @param  poly - Array for each thread to save its sum to a unique location
+   * @param  iter - Array for each thread to save its number of iterations
+   * @param  dist - Distance to look in each spatial direction
+   */
+  __device__ void
+  Polykov(double *poly, double *iter, int dist);
 
 
 };
