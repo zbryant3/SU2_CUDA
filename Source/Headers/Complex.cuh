@@ -77,7 +77,7 @@ friend complex<T> operator-(const complex<T>& lhs,const complex<T>& rhs){
 
 
 /**
- * Operator for multiplying
+ * Operator for multiplying two complex numbers
  */
 __host__ __device__
 friend complex<T> operator*(const complex<T>& lhs, const complex<T>& rhs){
