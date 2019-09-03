@@ -64,8 +64,16 @@ std::string polyname() {
           *iter += 1;
 
           //Gets rid of .dat
-          for(int i = 0; i < 4; i++) {
-                  name.pop_back();
+          if(*iter == 1){
+            for(int i = 0; i < 4; i++) {
+              name.pop_back();
+            }
+
+          }
+          else{
+            for(int i = 0; i < 5; i++){
+              name.pop_back();
+            }
           }
 
           name += std::to_string(*iter);
@@ -97,6 +105,8 @@ int main()
           cout << i << endl;
           model.Equilibrate();
         }
+
+        model.Save();
 
         //Generate a given amount of configs
         for(int i = 0; i < CONFIGS; i++){
