@@ -21,8 +21,8 @@
 //**************************************
 //   Definition of all the variables   *
 //**************************************
-#define LATTSIZE 8
-#define BETA 2.8
+#define LATTSIZE 40
+#define BETA 2
 
 
 
@@ -42,15 +42,17 @@ int main()
 
         File.open("../Data/AvgPlaq_vs_Equilibration.dat", ios::out | ios::trunc);
 
-        for(int i = 0; i < 50; i++){
+        double avg{0};
+        for(int i = 0; i < 2; i++){
           temp = model.AvgPlaquette();
-          cout << temp << "\n";
+          avg += temp;
+          cout << "\nAvgPlaquette:\t" << temp << "\n";
           File << i << " " << temp << "\n";
           File.flush();
           model.Equilibrate();
         }
         File.close();
-
+        cout << "Average: " << avg/200 <<"\n";
 
         return 0;
 }
