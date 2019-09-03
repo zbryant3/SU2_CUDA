@@ -1,56 +1,63 @@
-//***************************************************************************
-//    Author: Zachariah Bryant
-//    Function: Perform lattice QCD operations utilizing the NVIDIA
-//         CUDA. This is a wrapper for a GPU orientated class that
-//         contains the main operations.
-//
-//***************************************************************************
+/**
+ * Author: Zachariah Bryant
+ * Description: This is a class wrap for runnning SU(2) lattice qcd
+ *              operations using CUDA.
+ */
+
 
 #ifndef LATTICUDA_H
 #define LATTICUDA_H
 
-//*********************
-//    Header Files    *
-//*********************
+//  ********************
+//  *      Headers     *
+//  ********************
 #include "Complex.cuh"
 #include <string>
 
 
 
-//*********************************
-//      GPU Kernal Functions      *
-//*********************************
+//  *****************************
+//  *      Kernal Functions     *
+//  *****************************
 
 /**
- * Initializes all the links on the lattice to the unit matrix using GPU.
- * @param  d_lattice - Pointer to the lattice in device memory
+ * Initializes the lattice to unit matrices.
+ * @param  d_lattice - Array to lattice in device memory.
+ * @param  tdim      - Time dimension to initialize.
  */
 __global__ void
-GPU_Initialize(bach::complex<double> *d_lattice, int tdim);
+gpu_Initialize(bach::complex<double> *d_lattice, int tdim);
 
 /**
- * Equilibrates the lattice using the GPU.
- * @param  d_lattice - Pointer to the lattice in device memory
+ * Equilibrates the lattice.
+ * @param  d_lattice - Pointer to lattice in device memory.
+ * @param  tdim      - Time dimension to equilibrate.
+ * @param  dir       - Direction to equilibrate.
  */
 __global__ void
-GPU_Equilibrate(bach::complex<double> *d_lattice, int tdim, int dir);
+gpu_Equilibrate(bach::complex<double> *d_lattice, int tdim, int dir);
 
 
 /**
- * Gets the average plaquette of the lattice
+ * Gets the sum of plaquettes for the lattice.
+ * @param  d_lattice - Pointer to lattice in device memory.
+ * @param  tdim      - Time slice to look in.
+ * @param  d_plaq    - Array to hold sum of plaquettes unique
+ *                     for eaach lattice point.
+ * @param  d_iter    - Amount of plaquettes counted unique for each lattice point.
  */
 __global__ void
-GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter);
+gpu_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter);
 
 /**
- * Gets the trace of two polykov loops on all lattice sites of a set distance
- * @param d_lattice [description]
- * @param d_plaq    [description]
- * @param d_iter    [description]
- * @param dist      [description]
+ * Generates the sum of traces of two polykov loops
+ * @param  d_lattice - Pointer to lattice in device memory.
+ * @param  d_poly    - Array holding the sum of the trace of two polykov loops.
+ * @param  d_iter    - Amount of traces calculated.
+ * @param  dist      - Distance of separation of the polykov loops.
  */
 __global__ void
-GPU_Polykov(bach::complex<double> *d_lattice, double *d_poly, double *d_iter, int dist);
+gpu_Polykov(bach::complex<double> *d_lattice, double *d_poly, double *d_iter, int dist);
 
 
 
@@ -71,16 +78,17 @@ private:
   bach::complex<double> *d_lattice;
 
   /*  Constant GPU Variables
-  - Defined in class code since constant variables must be in a global scope
+  - Defined in .cu code since constant variables must be in a global scope
   __constant__ int d_size;
+  __constant__ double d_beta;
   */
 
 
   /**
-  * Initializes all the links on the lattice to the unit matrix
-  */
+   * Initializes all lattice links to unit matrix by envoking kernal.
+   */
   __host__
-  void Initialize();
+  void initialize();
 
 
   /**
@@ -91,7 +99,7 @@ private:
    * @return     - Int for array location
    */
   __host__ int
-  Loc(int *dim, int d, int m);
+  loc(int *dim, int d, int m);
 
 
 public:
@@ -113,41 +121,41 @@ public:
 
 
   /**
-   * Equilibrates the lattice
+   * Equilibrates the lattice by envoking the gpu kernal.
    */
   __host__ void
-  Equilibrate();
+  equilibrate();
 
 
   /**
-   * Calculates the average of two polykov loops
-   * @param  dist - Distance from
-   * @return      [description]
+   * Generates the value of the average plaquette for the lattice.
+   * @return double
    */
   __host__ double
-  Polykov(int dist);
+  avgPlaquette();
 
 
   /**
-   * Gets the value of the average plaquette of the lattice
-   * @return double - Average Plaquette
-   */
+  * Calculates the average of two polykov loops
+  * @param  dist - Distance from
+  * @return      [description]
+  */
   __host__ double
-  AvgPlaquette();
+  polykov(int dist);
+
 
   /**
    * Saves the lattice configuration to a file.
    */
   __host__ void
-  Save();
+  save();
 
 
   /**
    * Loads a lattice configuration from a file
-   * @param  file - File to load from
    */
   __host__ void
-  Load();
+  load();
 
 
 

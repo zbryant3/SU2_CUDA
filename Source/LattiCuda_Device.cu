@@ -1,6 +1,16 @@
+/**
+ * Author: Zachariah Bryant
+ * Description: Device based object to create in kernal
+ *              to run operations on a SU(2) lattice.
+ */
+
+
+//  ********************
+//  *      Headers     *
+//  ********************
+
 #include "./Headers/LattiCuda_Device.cuh"
 #include "./Headers/Complex.cuh"
-
 #include <stdio.h>
 
 //CUDA enabled random number generator
@@ -8,11 +18,9 @@
 #include <curand_kernel.h>
 
 
-//*******************************
-//    Private Member Functions  *
-//*******************************
-
-
+//  *************************************
+//  *      Private Member Functions     *
+//  *************************************
 
 /**
  * Moves down in a specific direction with periodic boundary
@@ -21,14 +29,13 @@
  * @param  d   - Direction to move in
  */
 __device__ void
-LattiCuda_Device::MD(int *loc, int d){
+LattiCuda_Device::movedown(int *loc, int d){
 
         if((loc[d] - 1) < 0)
                 loc[d] = (*size - 1);
         else
                 loc[d] = (loc[d] - 1);
 };
-
 
 
 /**
@@ -38,7 +45,7 @@ LattiCuda_Device::MD(int *loc, int d){
  * @param  d   - Direction to move in
  */
 __device__ void
-LattiCuda_Device::MU(int *loc, int d){
+LattiCuda_Device::moveup(int *loc, int d){
 
         if((loc[d] + 1) >= *size)
                 loc[d] = 0;
@@ -55,7 +62,7 @@ LattiCuda_Device::MU(int *loc, int d){
  * @return int  - array location for Lattice
  */
 __device__ int
-LattiCuda_Device::MLoc(int *loc, int d, int m){
+LattiCuda_Device::loc(int *loc, int d, int m){
 
         int coor{0};
 
@@ -71,16 +78,15 @@ LattiCuda_Device::MLoc(int *loc, int d, int m){
  * Initializes the position on the major lattice
  */
 __device__ void
-LattiCuda_Device::IniPos(int t){
+LattiCuda_Device::initialPos(int t){
 
         maj[0] = t;
         maj[1] = threadIdx.x + blockIdx.x * blockDim.x;
         maj[2] = threadIdx.y + blockIdx.y * blockDim.y;
         maj[3] = threadIdx.z + blockIdx.z * blockDim.z;
 
-        tid = MLoc(maj, 0, 0);
+        tid = loc(maj, 0, 0);
 };
-
 
 
 /**
@@ -90,7 +96,7 @@ LattiCuda_Device::IniPos(int t){
  * @param  r  - Result
  */
 __device__ void
-LattiCuda_Device::MaMult(bach::complex<double> *m1, bach::complex<double> *m2, bach::complex<double> *r){
+LattiCuda_Device::matrixMult(bach::complex<double> *m1, bach::complex<double> *m2, bach::complex<double> *r){
 
         r[0] = m1[0]*m2[0] + m1[1]*m2[2];
         r[1] = m1[0]*m2[1] + m1[1]*m2[3];
@@ -100,18 +106,18 @@ LattiCuda_Device::MaMult(bach::complex<double> *m1, bach::complex<double> *m2, b
 };
 
 
-
 /**
  * Generates a random integer from 0 to (t - 1)
  * @param  t - Bound for generation
  * @return int
  */
 __device__ int
-LattiCuda_Device::RandInt(int t){
+LattiCuda_Device::randomint(int t){
 
         return (curand(&rng) % t);
 
 };
+
 
 /**
  * Draws from reals from -1 to 1 or from 0 to 1
@@ -119,7 +125,7 @@ LattiCuda_Device::RandInt(int t){
  * @return double
  */
 __device__ double
-LattiCuda_Device::RandDouble(int t){
+LattiCuda_Device::randomdouble(int t){
 
         double z{0};
         if( t == 0 ) {
@@ -136,14 +142,19 @@ LattiCuda_Device::RandDouble(int t){
 };
 
 
-
+/**
+ * Gets the hermitian conjugate of a link
+ * @param  pos - Array with lattice position
+ * @param  d   - Direction to look in
+ * @param  in  - Input matrix to save link to
+ */
 __device__ void
-LattiCuda_Device::HermConj(int *pos, int d, bach::complex<double> *in){
+LattiCuda_Device::hermconj(int *pos, int d, bach::complex<double> *in){
 
-        in[0] = bach::conj(Lattice[MLoc(pos, d, 0)]);
-        in[1] = neg*Lattice[MLoc(pos, d, 1)];
-        in[2] = bach::conj(Lattice[MLoc(pos, d, 1)]);
-        in[3] = Lattice[MLoc(pos, d, 0)];
+        in[0] = bach::conj(Lattice[loc(pos, d, 0)]);
+        in[1] = neg*Lattice[loc(pos, d, 1)];
+        in[2] = bach::conj(Lattice[loc(pos, d, 1)]);
+        in[3] = Lattice[loc(pos, d, 0)];
 };
 
 
@@ -154,10 +165,10 @@ LattiCuda_Device::HermConj(int *pos, int d, bach::complex<double> *in){
  * @param  in  - Input matrix
  */
 __device__ void
-LattiCuda_Device::GetLink(int *pos, int d, bach::complex<double> *in){
+LattiCuda_Device::getlink(int *pos, int d, bach::complex<double> *in){
 
         for(int m = 0; m < 4; m++) {
-                in[m] = Lattice[MLoc(pos, d, m)];
+                in[m] = Lattice[loc(pos, d, m)];
         }
 
 };
@@ -169,7 +180,7 @@ LattiCuda_Device::GetLink(int *pos, int d, bach::complex<double> *in){
  * @param  out - Output Matrix
  */
 __device__ void
-LattiCuda_Device::RandLink(bach::complex<double> *in, bach::complex<double> *out){
+LattiCuda_Device::randomlink(bach::complex<double> *in, bach::complex<double> *out){
 
 
         double sdet = sqrt((in[0]*in[3] - in[1]*in[2]).real());
@@ -186,14 +197,14 @@ LattiCuda_Device::RandLink(bach::complex<double> *in, bach::complex<double> *out
         //Generate one acceptable number based on heatbath
         do {
                 //Random number from (0,1)
-                r[0] = RandDouble(1);
+                r[0] = randomdouble(1);
 
                 // a0 = 1 + (1/B*k)ln(x)
                 // exp[-2Bk] < x < 1
                 y[0] = 1 + (1/( (*beta)*sdet ))*log( r[0]*(1-exp(-2*(*beta)*sdet)) + exp(-2*(*beta)*sdet));
 
                 //Random number from (0,1)
-                r[0] = RandDouble(1);
+                r[0] = randomdouble(1);
 
         } while(pow(y[0], 2) > 1 - pow(r[0], 2)); // a0^2 > 1 - r^2
 
@@ -203,7 +214,7 @@ LattiCuda_Device::RandLink(bach::complex<double> *in, bach::complex<double> *out
         do {
 
                 for(int i = 1; i < 4; i++) {
-                        r[i] = RandDouble(0);
+                        r[i] = randomdouble(0);
                 }
 
         } while( (pow(r[1], 2) + pow(r[2], 2) + pow(r[3], 2)) > 1 );
@@ -231,7 +242,7 @@ LattiCuda_Device::RandLink(bach::complex<double> *in, bach::complex<double> *out
 
         //Multiply the generated matrix and the hermition conjugate
         //And save to the output matrix
-        MaMult(m, w, out);
+        matrixMult(m, w, out);
 
         /*
            //Normalize the new link - doesn't change anything up to .15 precision
@@ -246,10 +257,11 @@ LattiCuda_Device::RandLink(bach::complex<double> *in, bach::complex<double> *out
 
 
 /**
- * Equilibrates the lattice on thread based level
+ * Equilibrates the lattice on a thread based level
+ * @param  d - Direction to equilibrate
  */
 __device__ void
-LattiCuda_Device::ThreadEquilibrate(int d) {
+LattiCuda_Device::threadEquilibrate(int d) {
 
 
         bach::complex<double> a[4], b[4], c[4];
@@ -259,7 +271,7 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
         int pos[4];
 
         //Sets random seed
-        curand_init(clock64(), MLoc(maj, d, 0), 0, &rng);
+        curand_init(clock64(), loc(maj, d, 0), 0, &rng);
 
 
         //Go to initial position
@@ -277,47 +289,47 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
                 if(i != d) {
 
                         //Move up in d and get w1 in i
-                        MU(pos, d);
+                        moveup(pos, d);
                         for(int m = 0; m < 4; m++) {
-                                w1[m] = Lattice[MLoc(pos, i, m)];
+                                w1[m] = Lattice[loc(pos, i, m)];
                         }
 
 
 
                         //Move down in i and get v1 in i (hermitian conj)
-                        MD(pos, i);
-                        HermConj(pos, i, v1);
+                        movedown(pos, i);
+                        hermconj(pos, i, v1);
 
                         //Move down in d and get v2 in d (hermitian conj)
                         // and get v3 in i
-                        MD(pos, d);
-                        HermConj(pos, d, v2);
+                        movedown(pos, d);
+                        hermconj(pos, d, v2);
                         for(int m = 0; m < 4; m++) {
-                                v3[m] = Lattice[MLoc(pos, i, m)];
+                                v3[m] = Lattice[loc(pos, i, m)];
                         }
                         //Move up in i (original location now)
                         // and get w3 in i (hermitian conj)
-                        MU(pos, i);
-                        HermConj(pos, i, w3);
+                        moveup(pos, i);
+                        hermconj(pos, i, w3);
 
                         //Move up in i and get w2 in d (hermitian conj)
                         // then move back down to original location
-                        MU(pos, i);
-                        HermConj(pos, d, w2);
-                        MD(pos, i);
+                        moveup(pos, i);
+                        hermconj(pos, d, w2);
+                        movedown(pos, i);
 
 
 
                         //Multiply matrices w2xw3 and v2xv3
-                        MaMult(w2, w3, w);
-                        MaMult(v2, v3, v);
+                        matrixMult(w2, w3, w);
+                        matrixMult(v2, v3, v);
 
 
 
 
                         //Multiply w1xw and v1, v and add the results
-                        MaMult(w1, w, a);
-                        MaMult(v1, v, b);
+                        matrixMult(w1, w, a);
+                        matrixMult(v1, v, b);
 
                         for(int k = 0; k < 4; k++) {
                                 c[k] = c[k] + (a[k] + b[k]);
@@ -339,24 +351,22 @@ LattiCuda_Device::ThreadEquilibrate(int d) {
         }
 
         //Get a randomly generated link matrix based on C and save to A
-        RandLink(c, a);
+        randomlink(c, a);
 
         //Save Randomized Link
         for(int k = 0; k < 4; k++)
-                Lattice[MLoc(maj, d, k)] = a[k];
+                Lattice[loc(maj, d, k)] = a[k];
 
 };
 
 
-
 /**
- * Gets the Polykov Loop in a given position
+ * Gets the Polykov Loop in a given position (matrix form)
  * @param  pos - Spatail position to look in
  * @param  in  - Input matrix to save product of matrices to
- * @return     - Trace of the product of links
  */
 __device__ void
-LattiCuda_Device::PolyLoop(int *pos, bach::complex<double> *in){
+LattiCuda_Device::polyloop(int *pos, bach::complex<double> *in){
 
 
         bach::complex<double> w1[4], w2[4], w3[4];
@@ -365,32 +375,32 @@ LattiCuda_Device::PolyLoop(int *pos, bach::complex<double> *in){
         pos[0] = 0;
 
         //Get first link
-        GetLink(pos, 0, w1);
+        getlink(pos, 0, w1);
 
         //Move up in time, getting the links and then multiplying them
         for(int k = 1; k < *size; k++) {
 
-          pos[0] = k;
+                pos[0] = k;
 
-          GetLink(pos, 0, w2);
+                getlink(pos, 0, w2);
 
-          MaMult(w1, w2, w3);
+                matrixMult(w1, w2, w3);
 
-          for(int m = 0; m < 4; m++){
-            w1[m] = w3[m];
-          }
+                for(int m = 0; m < 4; m++) {
+                        w1[m] = w3[m];
+                }
 
         }
 
-        for(int i = 0; i < 4; i++){
-          in[i] = w1[i];
+        for(int i = 0; i < 4; i++) {
+                in[i] = w1[i];
         }
 };
 
 
-//*******************************
-//    Public Member Functions   *
-//*******************************
+//  ************************************
+//  *      Public Member Functions     *
+//  ************************************
 
 /**
  * Constructor for the Lattice QCD wrapper
@@ -404,14 +414,12 @@ LattiCuda_Device::LattiCuda_Device(int* const_size, double *const_beta, bach::co
 
         Lattice = major_lattice;
 
-        IniPos(t);
+        initialPos(t);
 
-        tid = MLoc(maj, 0, 0);
-
-
-
+        tid = loc(maj, 0, 0);
 
 };
+
 
 /**
  * Destructor for the Lattice QCD wrapper
@@ -423,22 +431,21 @@ LattiCuda_Device::~LattiCuda_Device(){
 };
 
 
-
 /**
  * Initializes all the links on the lattice to the unit matrix
  */
 __device__ void
-LattiCuda_Device::Initialize(){
+LattiCuda_Device::initialize(){
 
         //Set links in all directions to the unit matrix
         for(int d = 0; d < 4; d++) {
-                Lattice[MLoc(maj,d,0)]
+                Lattice[loc(maj,d,0)]
                         = bach::complex<double>(1,0);
-                Lattice[MLoc(maj,d,1)]
+                Lattice[loc(maj,d,1)]
                         = bach::complex<double>(0,0);
-                Lattice[MLoc(maj,d,2)]
+                Lattice[loc(maj,d,2)]
                         = bach::complex<double>(0,0);
-                Lattice[MLoc(maj,d,3)]
+                Lattice[loc(maj,d,3)]
                         = bach::complex<double>(1,0);
 
         }
@@ -448,10 +455,11 @@ LattiCuda_Device::Initialize(){
 
 
 /**
- * Equilibrates the Lattice
+ * Equilibratess the lattice in a checkerboard pattern
+ * @param   dir    - Direction to equilibrate
  */
 __device__ void
-LattiCuda_Device::Equilibrate(int dir){
+LattiCuda_Device::equilibrate(int dir){
 
 
         //Checkerboard pattern for blocks
@@ -461,35 +469,37 @@ LattiCuda_Device::Equilibrate(int dir){
         int Tremainder = (threadIdx.x + threadIdx.y + threadIdx.z)%2;
 
         if(Bremainder == 0 && Tremainder == 0) {
-                ThreadEquilibrate(dir);
+                threadEquilibrate(dir);
         }
         __syncthreads();
 
 
         if(Bremainder == 0 && Tremainder == 1) {
-                ThreadEquilibrate(dir);
+                threadEquilibrate(dir);
         }
         __syncthreads();
 
 
         if(Bremainder == 1 && Tremainder == 0) {
-                ThreadEquilibrate(dir);
+                threadEquilibrate(dir);
         }
         __syncthreads();
 
 
         if(Bremainder == 1 && Tremainder == 1) {
-                ThreadEquilibrate(dir);
+                threadEquilibrate(dir);
         }
         __syncthreads();
 };
 
 
 /**
- * Generates the average plaquette for each block
+ * Generates the sum of plaquettes of the lattice configuration.
+ * @param  plaq - Device memory for output of sum of plaquettes.
+ * @param  iter - Number of plaquettes accounted for.
  */
 __device__ void
-LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
+LattiCuda_Device::avgPlaquette(double *plaq, double *iter){
 
         bach::complex<double> w[4], w1[4], w2[4], w3[4], w4[4];
         bach::complex<double> v[4];
@@ -511,27 +521,27 @@ LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
 
                                 //Get link in direction of d
                                 for(int m = 0; m < 4; m++)
-                                        w1[m] = Lattice[MLoc(pos, d, m)];
+                                        w1[m] = Lattice[loc(pos, d, m)];
 
 
                                 //Look up in direction of d and get link of i
-                                MU(pos, d);
+                                moveup(pos, d);
                                 for(int m = 0; m < 4; m++)
-                                        w2[m] = Lattice[MLoc(pos, i, m)];
-                                MD(pos, d);
+                                        w2[m] = Lattice[loc(pos, i, m)];
+                                movedown(pos, d);
 
                                 //Look up in direction of i and get link of d (conjugated)
-                                MU(pos, i);
-                                HermConj(pos, d, w3);
-                                MD(pos, i);
+                                moveup(pos, i);
+                                hermconj(pos, d, w3);
+                                movedown(pos, i);
 
                                 //Get link in direction of dir2 (conjugated)
-                                HermConj(pos, i, w4);
+                                hermconj(pos, i, w4);
 
-                                MaMult( w1, w2, w);
-                                MaMult( w3, w4, v);
+                                matrixMult( w1, w2, w);
+                                matrixMult( w3, w4, v);
 
-                                MaMult( w, v, w1);
+                                matrixMult( w, v, w1);
 
 
                                 bach::complex<double> temp = (w1[0] + w1[3]);
@@ -555,7 +565,7 @@ LattiCuda_Device::AvgPlaquette(double *plaq, double *iter){
  * @param  dist - Distance to look in each spatial direction
  */
 __device__ void
-LattiCuda_Device::Polykov(double *poly, double *iter, int dist){
+LattiCuda_Device::polykov(double *poly, double *iter, int dist){
 
         bach::complex<double> p1[4], p2[4];
 
@@ -573,21 +583,21 @@ LattiCuda_Device::Polykov(double *poly, double *iter, int dist){
         for(int dir = 1; dir < 4; dir++) {
 
                 //   ***First Temporal Transporter***
-                PolyLoop(pos, p1);
+                polyloop(pos, p1);
 
 
                 //   ***Second Temporal Transporter***
 
                 //Move up to position by a set distance
-                for(int i = 1; i <= dist; i++){
-                  MU(pos, dir);
+                for(int i = 1; i <= dist; i++) {
+                        moveup(pos, dir);
                 }
 
-                PolyLoop(pos, p2);
+                polyloop(pos, p2);
 
                 //Move back down to original position
-                for(int i = 0; i < 4; i++){
-                  pos[i] = maj[i];
+                for(int i = 0; i < 4; i++) {
+                        pos[i] = maj[i];
                 }
 
                 //Get the hermitian conjugate of the second temporal transporter

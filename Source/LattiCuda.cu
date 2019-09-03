@@ -1,3 +1,13 @@
+/**
+ * Author: Zachariah Bryant
+ * Description: This is a class wrap for runnning SU(2) lattice qcd
+ *              operations using CUDA.
+ */
+
+ //  ********************
+ //  *      Headers     *
+ //  ********************
+
 #include "./Headers/LattiCuda.cuh"
 #include "./Headers/LattiCuda_Device.cuh"
 #include "./Headers/Complex.cuh"
@@ -7,12 +17,11 @@
 #include <iostream>
 #include <fstream>
 
-
 using namespace std;
 
-//*************************************
-//    Global Variable Declarations    *
-//*************************************
+//  *****************************************
+//  *      Global Variable Declarations     *
+//  *****************************************
 
 /**
  * Constant Variables for device code
@@ -23,85 +32,89 @@ __constant__ int d_size;
 __constant__ double d_beta;
 
 
-//*********************************
-//      GPU Kernal Functions      *
-//*********************************
+//  *****************************
+//  *      Kernal Functions     *
+//  *****************************
 
 /**
- * Initializes all the links on the lattice to the unit matrix
+ * Initializes the lattice to unit matrices.
+ * @param  d_lattice - Array to lattice in device memory.
+ * @param  tdim      - Time dimension to initialize.
  */
 __global__ void
-GPU_Initialize(bach::complex<double> *d_lattice, int tdim){
+gpu_Initialize(bach::complex<double> *d_lattice, int tdim){
 
         LattiCuda_Device device(&d_size, &d_beta, d_lattice, tdim);
 
-        device.Initialize();
+        device.initialize();
 };
 
-
 /**
- * Equilibrates the lattice using the GPU.
- * @param  d_lattice - Pointer to the lattice in device memory
+ * Equilibrates the lattice.
+ * @param  d_lattice - Pointer to lattice in device memory.
+ * @param  tdim      - Time dimension to equilibrate.
+ * @param  dir       - Direction to equilibrate.
  */
 __global__ void
-GPU_Equilibrate(bach::complex<double> *d_lattice, int tdim, int dir){
+gpu_Equilibrate(bach::complex<double> *d_lattice, int tdim, int dir){
 
         LattiCuda_Device device(&d_size, &d_beta, d_lattice, tdim);
 
-        device.Equilibrate(dir);
+        device.equilibrate(dir);
 
 };
 
-
-
 /**
- * Gets the average plaquette of the lattice
+ * Gets the sum of plaquettes for the lattice.
+ * @param  d_lattice - Pointer to lattice in device memory.
+ * @param  tdim      - Time slice to look in.
+ * @param  d_plaq    - Array to hold sum of plaquettes unique
+ *                     for eaach lattice point.
+ * @param  d_iter    - Amount of plaquettes counted unique for each lattice point.
  */
 __global__ void
-GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter){
+gpu_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter){
 
         LattiCuda_Device device(&d_size, &d_beta, d_lattice, tdim);
 
-        device.AvgPlaquette(d_plaq, d_iter);
+        device.avgPlaquette(d_plaq, d_iter);
 
 };
 
-
 /**
- * Gets the
- * @param d_lattice [description]
- * @param d_plaq    [description]
- * @param d_iter    [description]
- * @param dist      [description]
+ * Generates the sum of traces of two polykov loops
+ * @param  d_lattice - Pointer to lattice in device memory.
+ * @param  d_poly    - Array holding the sum of the trace of two polykov loops.
+ * @param  d_iter    - Amount of traces calculated.
+ * @param  dist      - Distance of separation of the polykov loops.
  */
 __global__ void
-GPU_Polykov(bach::complex<double> *d_lattice, double *d_poly, double *d_iter, int dist){
+gpu_Polykov(bach::complex<double> *d_lattice, double *d_poly, double *d_iter, int dist){
 
   //Create a gpu object with time slice set to zero
   LattiCuda_Device device(&d_size, &d_beta, d_lattice, 0);
 
-  device.Polykov(d_poly, d_iter, dist);
+  device.polykov(d_poly, d_iter, dist);
 
 };
 
 
-
-//*******************************
-//    Private Member Functions  *
-//*******************************
+//  *************************************
+//  *      Private Member Functions     *
+//  *************************************
 
 /**
- * Initializes all the links on the lattice to the unit matrix
+ * Initializes all lattice links to unit matrix by envoking kernal.
  */
 __host__ void
-LattiCuda::Initialize(){
+LattiCuda::initialize(){
 
         int half = h_size/4;
         dim3 in_Threads(4, 4, 4);
         dim3 in_Blocks(half, half, half);
 
         for(int t = 0; t < h_size; t++) {
-                GPU_Initialize<<<in_Blocks,in_Threads>>>(d_lattice, t);
+                gpu_Initialize<<<in_Blocks,in_Threads>>>(d_lattice, t);
         }
 };
 
@@ -115,7 +128,7 @@ LattiCuda::Initialize(){
  * @return     - Int for array location
  */
 __host__ int
-LattiCuda::Loc(int *dim, int d, int m){
+LattiCuda::loc(int *dim, int d, int m){
 
         int coor{0};
 
@@ -127,9 +140,9 @@ LattiCuda::Loc(int *dim, int d, int m){
 
 
 
-//*******************************
-//    Public Member Functions   *
-//*******************************
+//  ************************************
+//  *      Public Member Functions     *
+//  ************************************
 
 /**
  * Constructor for the Lattice QCD wrapper
@@ -155,7 +168,7 @@ LattiCuda::LattiCuda(int LattSize, double inBeta){
         cudaMemcpyToSymbol(d_beta, &h_beta, sizeof(double));
 
         //Initialize the lattice on creation
-        Initialize();
+        initialize();
 
 };
 
@@ -174,10 +187,10 @@ LattiCuda::~LattiCuda(){
 
 
 /**
- * Equilibrates the lattice
+ * Equilibrates the lattice by envoking the gpu kernal.
  */
 __host__ void
-LattiCuda::Equilibrate(){
+LattiCuda::equilibrate(){
 
         int split = h_size/4;
 
@@ -191,7 +204,7 @@ LattiCuda::Equilibrate(){
                 //Checkerboard pattern for T dimension
                 for(int offset = 0; offset <= 1; offset++) {
                         for(int tdim = 0; tdim < h_size/2; tdim++) {
-                                GPU_Equilibrate<<<Blocks, Threads>>>(d_lattice, ((tdim)*2 + offset), d);
+                                gpu_Equilibrate<<<Blocks, Threads>>>(d_lattice, ((tdim)*2 + offset), d);
                         }
                         cudaDeviceSynchronize();
                 }
@@ -202,11 +215,11 @@ LattiCuda::Equilibrate(){
 
 
 /**
- * Gets the value of the average plaquette of the lattice
- * @return double - Average Plaquette
+ * Generates the value of the average plaquette for the lattice.
+ * @return double
  */
 __host__ double
-LattiCuda::AvgPlaquette(){
+LattiCuda::avgPlaquette(){
 
         int split = h_size/4;
 
@@ -231,7 +244,7 @@ LattiCuda::AvgPlaquette(){
 
         //Run on gpu for each time slice
         for(int tdim = 0; tdim < h_size; tdim++) {
-                GPU_AvgPlaquette<<<Blocks, Threads>>>
+                gpu_AvgPlaquette<<<Blocks, Threads>>>
                 (d_lattice, tdim, d_plaq, d_iter);
         }
         cudaDeviceSynchronize();
@@ -260,12 +273,12 @@ LattiCuda::AvgPlaquette(){
 
 
 /**
- * Calculates the expectation value of two polykov loops
+ * Calculates the expectation value of the trace of two polykov loops
  * @param  dist - Distance of loops
- * @return      - Average of all lattice locations
+ * @return double
  */
 __host__ double
-LattiCuda::Polykov(int dist){
+LattiCuda::polykov(int dist){
 
         int split = h_size/4;
 
@@ -289,7 +302,7 @@ LattiCuda::Polykov(int dist){
 
 
         //Run on gpu for each time slice
-        GPU_Polykov<<<Blocks, Threads>>>(d_lattice, d_poly, d_iter, dist);
+        gpu_Polykov<<<Blocks, Threads>>>(d_lattice, d_poly, d_iter, dist);
 
         cudaDeviceSynchronize();
 
@@ -321,7 +334,7 @@ LattiCuda::Polykov(int dist){
  * Saves the lattice configuration to a file.
  */
 __host__ void
-LattiCuda::Save(){
+LattiCuda::save(){
         printf("Saving Lattice Configuration......\n");
 
         //Copy device lattice to host lattice
@@ -338,8 +351,8 @@ LattiCuda::Save(){
                         for( pos[2] = 0; pos[2] < h_size; pos[2]++) { // Y dimension
                                 for( pos[3] = 0; pos[3] < h_size; pos[3]++) { // Z dimension
                                         for(int d = 0; d < 4; d++) { // direction
-                                                File1 << h_lattice[Loc(pos, d, 0)].real() << " " << h_lattice[Loc(pos, d, 0)].imag()
-                                                      << " " << h_lattice[Loc(pos, d, 1)].real() << " " << h_lattice[Loc(pos, d, 1)].imag() << endl;
+                                                File1 << h_lattice[loc(pos, d, 0)].real() << " " << h_lattice[loc(pos, d, 0)].imag()
+                                                      << " " << h_lattice[loc(pos, d, 1)].real() << " " << h_lattice[loc(pos, d, 1)].imag() << endl;
 
                                         }
                                 }
@@ -355,13 +368,11 @@ LattiCuda::Save(){
 };
 
 
-
 /**
  * Loads a lattice configuration from a file
- * @param  file - File to load from
  */
 __host__ void
-LattiCuda::Load(){
+LattiCuda::load(){
         printf("Loading Lattice Configuration.......\n");
 
         fstream File;
@@ -379,13 +390,13 @@ LattiCuda::Load(){
                                                 for(int d = 0; d < 4; d++) { // direction
                                                         File >> real;
                                                         File >> imag;
-                                                        h_lattice[Loc(pos, d, 0)] = bach::complex<double>(real, imag);
-                                                        h_lattice[Loc(pos, d, 3)] = bach::complex<double>(real, (-1)*imag);
+                                                        h_lattice[loc(pos, d, 0)] = bach::complex<double>(real, imag);
+                                                        h_lattice[loc(pos, d, 3)] = bach::complex<double>(real, (-1)*imag);
 
                                                         File >> real;
                                                         File >> imag;
-                                                        h_lattice[Loc(pos, d, 1)] = bach::complex<double>(real, imag);
-                                                        h_lattice[Loc(pos, d, 2)] = bach::complex<double>((-1)*real, imag);
+                                                        h_lattice[loc(pos, d, 1)] = bach::complex<double>(real, imag);
+                                                        h_lattice[loc(pos, d, 2)] = bach::complex<double>((-1)*real, imag);
                                                 }
                                         }
                                 }

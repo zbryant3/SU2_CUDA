@@ -1,17 +1,31 @@
-//******************************************************************
-//    Author: Zachariah Bryant
-//    Function: Object that creates a complex number.
-//
-//******************************************************************
+/**
+ * Author: Zacharaih Bryant
+ * Description: Creates a complex object of type float or double
+ *              that can run basic operations on the CPU or GPU.
+ */
+
 
 #ifndef COMPLEX_H
 #define COMPLEX_H
 
 
+//  ********************
+//  *      Headers     *
+//  ********************
+
+
 #include <stdio.h>
 #include <stdlib.h>
 
+//  ***********************
+//  *     Namespace       *
+//  ***********************
 namespace bach {
+
+
+//  ********************
+//  *      Class       *
+//  ********************
 
 template <class T>
 class complex {
@@ -29,7 +43,6 @@ public:
 __host__ __device__
 complex(T inreal = 0, T inimag = 0) : x(inreal), y(inimag) {
 };
-
 
 /**
  * Destructor for the complex number
@@ -54,10 +67,6 @@ T imag(){
         return y;
 };
 
-
-
-
-
 /**
  * Operator for adding
  */
@@ -66,7 +75,6 @@ friend complex<T> operator+(const complex<T>& lhs, const complex<T>& rhs){
         return complex<T> (lhs.x + rhs.x, lhs.y + rhs.y);
 };
 
-
 /**
  * Operator for subtracting
  */
@@ -74,7 +82,6 @@ __host__ __device__
 friend complex<T> operator-(const complex<T>& lhs,const complex<T>& rhs){
         return complex<T> (lhs.x - rhs.x, lhs.y - rhs.y);
 };
-
 
 /**
  * Operator for multiplying two complex numbers
@@ -86,7 +93,6 @@ friend complex<T> operator*(const complex<T>& lhs, const complex<T>& rhs){
         i = lhs.x*rhs.y + lhs.y*rhs.x;
         return complex<T>(r,i);
 };
-
 
 /**
  * Dividing by a complex number
@@ -110,7 +116,6 @@ friend complex<T> operator/(const complex<T>& lhs, T d){
 
 };
 
-
 /**
  * Prints the real and imaginary parts of the complex number
  */
@@ -119,7 +124,6 @@ __host__ __device__
 void print(complex<T> in){
         printf("Real:\t%.15g\tImag:\t%.15g\n", in.real(), in.imag());
 };
-
 
 /**
  * Gets the absulute value of a complex number
@@ -142,7 +146,6 @@ __host__ __device__
 complex<T> conj(complex<T> in){
         return complex<T>(in.real(), (-1)*in.imag());
 };
-
 
 
 

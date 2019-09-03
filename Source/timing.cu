@@ -1,40 +1,31 @@
-//*****************************************************
-// Usage: Performs SU[2] simulations utilizing        *
-//  monte carlo calculations performed on the GPU.    *
-//                                                    *
-// Author: Zachariah Bryant                           *
-//*****************************************************
+/**
+ * Author: Zachariah Bryant
+ * Description: This program times the average equilibration of 100 steps
+ *              vs the lattice size.
+ */
 
 
-//**************
-//   Headers   *
-//**************
+//  ********************
+//  *      Headers     *
+//  ********************
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
-#include <chrono>
-
-//Contains class wrap for SU model to be performed on the gpu
+#include <chrono> //< For Timer
 #include "./Headers/LattiCuda.cuh"
-
-
-//**************************************
-//   Definition of all the variables   *
-//**************************************
-#define LATTSIZE 8
-#define BETA 2.8
-
-
-
 
 using namespace std;
 using namespace std::chrono;
 
+//  ***********************************
+//  *     Definition of Variables     *
+//  ***********************************
+#define LATTSIZE 8
+#define BETA 2.8
 
-//**********************
-//    Main Function    *
-//**********************
+//  **************************
+//  *      Main Function     *
+//  **************************
 int main()
 {
 
@@ -51,7 +42,7 @@ int main()
                 high_resolution_clock::time_point t1 = high_resolution_clock::now();
 
                 for(int i = 0; i < 100; i++) {
-                        model.Equilibrate();
+                        model.equilibrate();
                 }
 
                 high_resolution_clock::time_point t2 = high_resolution_clock::now();
