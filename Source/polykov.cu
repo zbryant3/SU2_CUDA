@@ -1,7 +1,7 @@
 /**
  * Author: Zachaiah Bryant
  * Description: Generates the average of two polykov loops across
- *              distances 1-13 for various SU(2) lattice configurations.
+ *              distances 1-16 for various SU(2) lattice configurations.
  */
 
 
@@ -21,9 +21,8 @@ using namespace std;
 //  *************************************
 
 #define LATTSIZE 16
-#define BETA 5.7
+#define BETA 2.5
 #define CONFIGS 10
-#define THERMAL 1000
 #define SEPARATION 100
 
 //  ***************************
@@ -102,7 +101,7 @@ int main()
 
         //Open Pre-Thermalized Lattice
         model.load();
-
+ 
         //Generate a given amount of configs
         for(int i = 0; i < CONFIGS; i++) {
                 cout << i << endl;
@@ -114,7 +113,7 @@ int main()
 
                 //Gather the average of two polykov loops for different
                 //distances for the config
-                for(int dist = 1; dist < 14; dist++) {
+                for(int dist = 1; dist <= 16; dist++) {
                         file << model.polykov(dist) << " ";
                 }
                 file << "\n";
