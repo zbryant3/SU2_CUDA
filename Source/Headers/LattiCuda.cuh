@@ -43,7 +43,7 @@ __global__ void
 GPU_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, double *d_iter);
 
 /**
- * Gets the expectation value of
+ * Gets the trace of two polykov loops on all lattice sites of a set distance
  * @param d_lattice [description]
  * @param d_plaq    [description]
  * @param d_iter    [description]
