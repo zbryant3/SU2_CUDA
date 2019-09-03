@@ -1,37 +1,92 @@
 
-
+#include <sys/stat.h>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fstream>
+#include <string>
 #include "./Headers/Complex.cuh"
+//Contains class wrap for SU model to be performed on the gpu
+#include "./Headers/LattiCuda.cuh"
+
+
+//**************************************
+//   Definition of all the variables   *
+//**************************************
+#define LATTSIZE 16
+#define BETA 5.7
 
 using namespace std;
 
 
-__device__ void MaMult(bach::complex<double> *m1, bach::complex<double> *m2, bach::complex<double> *r){
-
-  bach::complex<double> neg = bach::complex<double> (-1,-1);
-
-        r[0] = m1[0]*m2[0] + m1[1]*m2[2];
-        r[1] = m1[0]*m2[1] + m1[1]*m2[3];
-        r[2] = neg*bach::conj(r[1]);
-        r[3] = bach::conj(r[0]);
-
-};
-
-__global__ void func(){
-  bach::complex<double> m (1,9);
-  bach::complex<double> n (2, 4);
-  m = m / 6 ;
-  bach::print(m);
+/**
+ * Checks for the existance of a file
+ * @param  name - Destination and name to look for
+ */
+inline bool exist(const std::string& name) {
+        struct stat buffer;
+        return (stat (name.c_str(), &buffer) == 0);
 }
 
 
-int main(){
+/**
+ * Function for creating a unique file for the polykov loop
+ * @return string of name and file location
+ */
+std::string polyname() {
+  string name = "../Data/Polykov/PolyVsDist";
+  name += ".dat";
 
-        func<<<1,1>>>();
-        cudaDeviceSynchronize();
+  int *iter = new int;
+  *iter = 0;
+  while(exist(name)) {
 
+          *iter += 1;
+
+          //Gets rid of .dat
+          for(int i = 0; i < 4; i++) {
+                  name.pop_back();
+          }
+
+          name += std::to_string(*iter);
+          name += ".dat";
+
+  }
+  delete iter;
+
+  std::cout << name << "\n";
+
+  return name;
+};
+
+
+//**********************
+//    Main Function    *
+//**********************
+int main()
+{
+          LattiCuda model(LATTSIZE, BETA);
+
+          for(int i = 0; i < 100; i++){
+            cout << i << endl;
+            model.Equilibrate();
+          }
+
+          model.Save();
+
+
+
+        /*
+
+
+           double temp;
+
+           for(int i = 0; i < 2; i++){
+           model.Equilibrate();
+           temp = model.Polykov(1);
+           cout << temp << "\n";
+           }
+         */
 
         return 0;
 }
