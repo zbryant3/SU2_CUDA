@@ -4,8 +4,8 @@ OBJECTS = $(wildcard ./Source/*.o)
 EXEC = ./Executables/AVGPLAQ ./Executables/TIMER ./Executables/POLYKOV ./Executables/TEST
 
 all:
-	@$(MAKE) -w -C Source
-	@$(MAKE) -w -C Executables
+	@$(MAKE) -s -w -C Source
+	@$(MAKE) -s -w -C Executables
 
 clean:
 	@rm $(OBJECTS)
