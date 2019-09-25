@@ -15,18 +15,42 @@
 #include <string>
 #include "./Headers/Complex.cuh"
 #include "./Headers/LattiCuda.cuh"
+#include <vector>
 
 using namespace std;
 
 //  **********************************
 //  *      Definition of Variables   *
 //  **********************************
-#define LATTSIZE 16
-#define BETA 5.7
+#define FILES 15
 
 //  ***************************
 //  *     Extra Functions     *
 //  ***************************
+
+
+double average(double *avgspin)
+{
+  double total{0};
+
+  for(unsigned int i = 0; i < FILES*10; i++)
+  total += avgspin[i];
+
+  return total/(FILES*10);
+}
+
+double standard_Deviation(double *avgspin)
+{
+  double x{0};
+  double y{average(avgspin)};
+
+  for(int i = 0; i < FILES*10; i++)
+  x += pow((avgspin[i] - y), 2);
+
+  x = sqrt(x)/sqrt(FILES*10*(FILES*10-1));
+  return x;
+}
+
 
 
 /**
@@ -43,46 +67,10 @@ inline bool exist(const std::string& name) {
  * Function for creating a unique file for the polykov loop
  * @return string of name and file location
  */
-std::string polyname() {
+std::string polyname(int i) {
         string name = "../Data/Polykov/PolyVsDist";
+        name += std::to_string(i);
         name += ".dat";
-
-        int *iter = new int;
-        *iter = 0;
-        while(exist(name)) {
-
-                *iter += 1;
-
-                //Gets rid of .dat
-                if(*iter == 1) {
-                        for(int i = 0; i < 4; i++) {
-                                name.pop_back();
-                        }
-                }
-                else if(*iter <= 10) {
-                        for(int i = 0; i <= 4; i++) {
-                                name.pop_back();
-                        }
-                }
-                else if(*iter <= 100) {
-                        for(int i = 0; i <= 5; i++) {
-                                name.pop_back();
-                        }
-                }
-                else{
-                        for(int i = 0; i <= 6; i++) {
-                                name.pop_back();
-                        }
-                }
-
-
-                name += std::to_string(*iter);
-                name += ".dat";
-
-        }
-        delete iter;
-
-        std::cout << name << "\n";
 
         return name;
 };
@@ -93,14 +81,31 @@ std::string polyname() {
 //  **************************
 int main()
 {
-        fstream file;
+        fstream fileout, filein;
+        double data[16][FILES*10];
 
-        for(int i = 0; i < 10; i++) {
-                file.open(polyname(), ios::out | ios::trunc);
-                file << i << "\n";
-                file.flush();
-                file.close();
+        fileout.open("../Data/DistvsPolykov.dat", ios::out | ios:: trunc);
+
+        for(int i = 0; i <= FILES; i++) {
+                filein.open(polyname(i), ios::in);
+
+                for(int dis = 0; dis < 16; dis++){
+                  for(int c = 0; c < 10; c++){
+
+                    filein >> data[dis][i*c];
+                  }
+                }
+
+                filein.close();
         }
+
+        for(int i = 0; i < 16; i++){
+          fileout << i + 1<< " "<< average(data[i]) << " " << standard_Deviation(data[i]) << endl;
+          //fileout << i + 1 << " " <<  (-1*log(average(data[i])))/(FILES*10) << " " << (-1*log(standard_Deviation(data[i])))/(FILES*10) << "\n";
+          fileout.flush();
+        }
+
+        fileout.close();
 
 
         return 0;
