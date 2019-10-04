@@ -102,6 +102,11 @@ int main()
         //Open Pre-Thermalized Lattice
         model.load();
 
+        //Equilibrate the loaded lattice a couple times
+        for(int i = 0; i < 10; i++){
+          model.equilibrate();
+        }
+
         //Generate a given amount of configs
         for(int i = 0; i < CONFIGS; i++) {
                 cout << i << endl;

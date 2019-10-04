@@ -585,8 +585,6 @@ LattiCuda_Device::polykov(double *poly, double *iter, int dist){
                 //   ***First Temporal Transporter***
                 polyloop(pos, p1);
 
-
-
                 //Move up to position by a set distance
                 for(int i = 1; i <= dist; i++) {
                         moveup(pos, dir);
@@ -606,6 +604,7 @@ LattiCuda_Device::polykov(double *poly, double *iter, int dist){
                 p2[1] = neg*p2[1];
                 p2[0] = bach::conj(p2[0]);
 
+                //Saves trace of two polykovloops to array to average
                 poly[tid] += (p1[0] + p1[3]).real() * (p2[0] + p2[3]).real();
                 iter[tid] += 1;
         }
