@@ -101,7 +101,7 @@ int main()
 
         //Open Pre-Thermalized Lattice
         model.load();
- 
+
         //Generate a given amount of configs
         for(int i = 0; i < CONFIGS; i++) {
                 cout << i << endl;
@@ -114,7 +114,7 @@ int main()
                 //Gather the average of two polykov loops for different
                 //distances for the config
                 for(int dist = 1; dist <= 16; dist++) {
-                        file << model.polykov(dist) << " ";
+                        file << -log(model.polykov(dist))/LATTSIZE << " ";
                 }
                 file << "\n";
                 file.flush();
