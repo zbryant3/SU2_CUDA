@@ -382,16 +382,18 @@ LattiCuda_Device::polyloop(int *pos, bach::complex<double> *in){
 
                 pos[0] = k;
 
-                getlink(pos, 0, w2);
+                getlink(pos, 0, w2); //  <----- Links in 0 direction always? (time dir)
 
                 matrixMult(w1, w2, w3);
 
+                //Save link for next loop
                 for(int m = 0; m < 4; m++) {
                         w1[m] = w3[m];
                 }
 
         }
 
+        //Save final product of links
         for(int i = 0; i < 4; i++) {
                 in[i] = w1[i];
         }
