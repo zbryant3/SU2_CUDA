@@ -586,13 +586,13 @@ LattiCuda_Device::polykov(double *poly, double *iter, int dist){
                 polyloop(pos, p1);
 
 
-                //   ***Second Temporal Transporter***
 
                 //Move up to position by a set distance
                 for(int i = 1; i <= dist; i++) {
                         moveup(pos, dir);
                 }
 
+                //   ***Second Temporal Transporter***
                 polyloop(pos, p2);
 
                 //Move back down to original position
