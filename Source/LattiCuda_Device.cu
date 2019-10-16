@@ -382,8 +382,7 @@ LattiCuda_Device::polyloop(int *pos, bach::complex<double> *in){
 
                 pos[0] = k;
 
-                getlink(pos, 0, w2); //  <----- Links in 0 direction always? (time dir)
-
+                getlink(pos, 0, w2); //  <----- Links in time direction always?
                 matrixMult(w1, w2, w3);
 
                 //Save link for next loop
@@ -575,7 +574,7 @@ LattiCuda_Device::polykov(double *poly, double *iter, int dist){
         poly[tid] = 0;
         iter[tid] = 0;
 
-        //Get the position of the thread
+        //Get the initial position of the thread
         int pos[4];
         for(int i = 0; i < 4; i++) {
                 pos[i] = maj[i];
@@ -610,6 +609,4 @@ LattiCuda_Device::polykov(double *poly, double *iter, int dist){
                 poly[tid] += (p1[0] + p1[3]).real() * (p2[0] + p2[3]).real();
                 iter[tid] += 1;
         }
-
-
 };

@@ -23,7 +23,7 @@ using namespace std;
 #define LATTSIZE 16
 #define BETA 2.5
 #define CONFIGS 10
-#define SEPARATION 100
+#define SEPARATION 10
 
 //  ***************************
 //  *      Function Headers   *
@@ -108,7 +108,7 @@ int main()
         }
 
         //Generate a given amount of configs
-        for(int i = 0; i < CONFIGS; i++) {
+        for(int i = 0; i < 1; i++) {
                 cout << i << endl;
 
                 //Equilibrate to separate measurements
@@ -118,7 +118,7 @@ int main()
 
                 //Gather the average of two polykov loops for different
                 //distances for the config
-                for(int dist = 1; dist <= 16; dist++) {
+                for(int dist = 1; dist <= 1; dist++) {
                         file << -log(model.polykov(dist))/LATTSIZE << " ";
                 }
                 file << "\n";

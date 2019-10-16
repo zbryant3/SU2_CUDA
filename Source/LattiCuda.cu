@@ -4,9 +4,9 @@
  *              operations using CUDA.
  */
 
- //  ********************
- //  *      Headers     *
- //  ********************
+//  ********************
+//  *      Headers     *
+//  ********************
 
 #include "./Headers/LattiCuda.cuh"
 #include "./Headers/LattiCuda_Device.cuh"
@@ -91,10 +91,10 @@ gpu_AvgPlaquette(bach::complex<double> *d_lattice, int tdim, double *d_plaq, dou
 __global__ void
 gpu_Polykov(bach::complex<double> *d_lattice, double *d_poly, double *d_iter, int dist){
 
-  //Create a gpu object with time slice set to zero
-  LattiCuda_Device device(&d_size, &d_beta, d_lattice, 0);
+        //Create a gpu object with time slice set to zero
+        LattiCuda_Device device(&d_size, &d_beta, d_lattice, 0);
 
-  device.polykov(d_poly, d_iter, dist);
+        device.polykov(d_poly, d_iter, dist);
 
 };
 
@@ -292,7 +292,6 @@ LattiCuda::polykov(int dist){
         double *h_iter;
         h_poly = new double[h_size*h_size*h_size];
         h_iter = new double[h_size*h_size*h_size];
-
         double *d_poly;
         double *d_iter;
 
@@ -300,8 +299,7 @@ LattiCuda::polykov(int dist){
         cudaMalloc((void**)&d_poly, sizeof(double)*h_size*h_size*h_size);
         cudaMalloc((void**)&d_iter, sizeof(double)*h_size*h_size*h_size);
 
-
-        //Run on gpu for each time slice
+        //Run on GPU (Only 0 time slice)
         gpu_Polykov<<<Blocks, Threads>>>(d_lattice, d_poly, d_iter, dist);
 
         cudaDeviceSynchronize();
